@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	quiltImage = "quilt/quilt"
+	quiltImage = "ethanj/quilt"
 )
 
 // Allow mocking out for the unit tests.
@@ -25,7 +25,7 @@ var ver = version.Version
 func Ubuntu(opts Options) string {
 	t := template.Must(template.New("cloudConfig").Parse(cfgTemplate))
 
-	img := fmt.Sprintf("%s:%s", quiltImage, ver)
+	img := quiltImage
 
 	var cloudConfigBytes bytes.Buffer
 	err := t.Execute(&cloudConfigBytes, struct {

@@ -15,7 +15,7 @@ LINE_LENGTH_EXCLUDE=./api/pb/pb.pb.go \
 		    ./quilt-tester/tests/zookeeper/vendor/% \
 		    ./stitch/bindings.js.go
 
-REPO = quilt
+REPO = ethanj
 DOCKER = docker
 SHELL := /bin/bash
 

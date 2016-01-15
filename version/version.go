@@ -1,4 +1,4 @@
 package version
 
 // Version is the Quilt version number.
-const Version = "dev"
+const Version = "image"

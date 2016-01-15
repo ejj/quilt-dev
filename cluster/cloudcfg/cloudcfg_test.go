@@ -18,7 +18,7 @@ func TestCloudConfig(t *testing.T) {
 		SSHKeys:    []string{"a", "b"},
 		MinionOpts: MinionOptions{Role: db.Master},
 	})
-	exp := "(quilt/quilt:master) (a\nb) (xenial) (--role \"Master\") (info)"
+	exp := "(ethanj/quilt) (a\nb) (xenial) (--role \"Master\") (info)"
 	if res != exp {
 		t.Errorf("res: %s\nexp: %s", res, exp)
 	}
@@ -29,7 +29,7 @@ func TestCloudConfig(t *testing.T) {
 		SSHKeys:    []string{"a", "b"},
 		MinionOpts: MinionOptions{Role: db.Worker},
 	})
-	exp = "(quilt/quilt:1.2.3) (a\nb) (xenial) (--role \"Worker\") (debug)"
+	exp = "(ethanj/quilt) (a\nb) (xenial) (--role \"Worker\") (debug)"
 	if res != exp {
 		t.Errorf("res: %s\nexp: %s", res, exp)
 	}
