@@ -11,6 +11,7 @@ import (
 	"github.com/NetSys/quilt/minion/docker"
 	"github.com/NetSys/quilt/minion/ipdef"
 	"github.com/NetSys/quilt/util"
+	"github.com/vishvananda/netlink"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -166,16 +167,9 @@ func (sv *supervisor) updateWorker(IP string, leaderIP string, etcdIPs []string)
 		return
 	}
 
-	err = execRun("ip", "link", "set", "dev", "quilt-int", "up")
-	if err != nil {
-		log.WithError(err).Warnf("Failed to bring up quilt-int")
-		return
-	}
-
 	ip := net.IPNet{IP: ipdef.GatewayIP, Mask: ipdef.QuiltSubnet.Mask}
-	err = execRun("ip", "addr", "add", ip.String(), "dev", "quilt-int")
-	if err != nil {
-		log.WithError(err).Warnf("Failed to set quilt-int IP")
+	if err := cfgGateway("quilt-int", ip); err != nil {
+		log.WithError(err).Error("Failed to configure quilt-int.")
 		return
 	}
 
@@ -289,3 +283,25 @@ func nodeName(IP string) string {
 var execRun = func(name string, arg ...string) error {
 	return exec.Command(name, arg...).Run()
 }
+
+func cfgGatewayImpl(name string, ip net.IPNet) error {
+	link, err := linkByName(name)
+	if err != nil {
+		return fmt.Errorf("no such interface: %s (%s)", name, err)
+	}
+
+	if err := linkSetUp(link); err != nil {
+		return fmt.Errorf("failed to bring up link: %s (%s)", name, err)
+	}
+
+	if err := addrAdd(link, &netlink.Addr{IPNet: &ip}); err != nil {
+		return fmt.Errorf("failed to set address: %s (%s)", name, err)
+	}
+
+	return nil
+}
+
+var cfgGateway = cfgGatewayImpl
+var linkByName = netlink.LinkByName
+var linkSetUp = netlink.LinkSetUp
+var addrAdd = netlink.AddrAdd

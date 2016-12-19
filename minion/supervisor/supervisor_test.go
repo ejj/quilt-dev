@@ -1,13 +1,18 @@
 package supervisor
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"reflect"
 	"testing"
 
 	"github.com/NetSys/quilt/db"
 	"github.com/NetSys/quilt/minion/docker"
+	"github.com/NetSys/quilt/minion/ipdef"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/stretchr/testify/assert"
+	"github.com/vishvananda/netlink"
 )
 
 func TestNone(t *testing.T) {
@@ -358,6 +363,54 @@ func TestEtcdRemove(t *testing.T) {
 	}
 }
 
+func TestCfgGateway(t *testing.T) {
+	linkByName = func(name string) (netlink.Link, error) {
+		if name == "quilt-int" {
+			return &netlink.Device{}, nil
+		}
+		return nil, errors.New("linkByName")
+	}
+
+	linkSetUp = func(link netlink.Link) error {
+		return errors.New("linkSetUp")
+	}
+
+	addrAdd = func(link netlink.Link, addr *netlink.Addr) error {
+		return errors.New("addrAdd")
+	}
+
+	ip := net.IPNet{IP: ipdef.GatewayIP, Mask: ipdef.QuiltSubnet.Mask}
+
+	err := cfgGatewayImpl("bogus", ip)
+	assert.EqualError(t, err, "no such interface: bogus (linkByName)")
+
+	err = cfgGatewayImpl("quilt-int", ip)
+	assert.EqualError(t, err, "failed to bring up link: quilt-int (linkSetUp)")
+
+	var up bool
+	linkSetUp = func(link netlink.Link) error {
+		up = true
+		return nil
+	}
+
+	up = false
+	err = cfgGatewayImpl("quilt-int", ip)
+	assert.EqualError(t, err, "failed to set address: quilt-int (addrAdd)")
+	assert.True(t, up)
+
+	var setAddr net.IPNet
+	addrAdd = func(link netlink.Link, addr *netlink.Addr) error {
+		setAddr = *addr.IPNet
+		return nil
+	}
+
+	up = false
+	err = cfgGatewayImpl("quilt-int", ip)
+	assert.NoError(t, err)
+	assert.True(t, up)
+	assert.Equal(t, setAddr, ip)
+}
+
 type testCtx struct {
 	sv    supervisor
 	fd    fakeDocker
@@ -387,6 +440,11 @@ func initTest() *testCtx {
 
 	execRun = func(name string, args ...string) error {
 		ctx.execs = append(ctx.execs, append([]string{name}, args...))
+		return nil
+	}
+
+	cfgGateway = func(name string, ip net.IPNet) error {
+		execRun("cfgGateway", ip.String())
 		return nil
 	}
 
@@ -450,9 +508,8 @@ func ovsExecArgs(ip, leader string) [][]string {
 		"--", "set", "bridge", "quilt-int", "fail_mode=secure",
 		"other_config:hwaddr=\"02:00:0a:00:00:01\"",
 	}
-	up := []string{"ip", "link", "set", "dev", "quilt-int", "up"}
-	addr := []string{"ip", "addr", "add", "10.0.0.1/8", "dev", "quilt-int"}
-	return [][]string{vsctl, up, addr}
+	gateway := []string{"cfgGateway", "10.0.0.1/8"}
+	return [][]string{vsctl, gateway}
 }
 
 func validateImage(image string) {
