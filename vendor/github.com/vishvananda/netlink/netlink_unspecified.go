@@ -143,11 +143,11 @@ func LinkList() ([]Link, error) {
 	return nil, ErrNotImplemented
 }
 
-func AddrAdd(link *Link, addr *Addr) error {
+func AddrAdd(link Link, addr *Addr) error {
 	return ErrNotImplemented
 }
 
-func AddrDel(link *Link, addr *Addr) error {
+func AddrDel(link Link, addr *Addr) error {
 	return ErrNotImplemented
 }
 
@@ -163,7 +163,7 @@ func RouteDel(route *Route) error {
 	return ErrNotImplemented
 }
 
-func RouteList(link *Link, family int) ([]Route, error) {
+func RouteList(link Link, family int) ([]Route, error) {
 	return nil, ErrNotImplemented
 }
 

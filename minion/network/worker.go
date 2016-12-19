@@ -31,9 +31,6 @@ const (
 	concurrencyLimit int    = 32 // Adjust to change per function goroutine limit
 )
 
-// The machine's public interface.
-var publicInterface string
-
 // This represents a rule in the iptables
 type ipRule struct {
 	cmd   string
@@ -91,14 +88,6 @@ func runWorker(conn db.Conn) {
 	}
 	defer odb.Close()
 
-	if publicInterface == "" {
-		if pubIntf, err := getPublicInterface(); err == nil {
-			publicInterface = pubIntf
-		} else {
-			log.WithError(err).Error("Failed to get public interface")
-		}
-	}
-
 	// XXX: By doing all the work within a transaction, we (kind of) guarantee that
 	// containers won't be removed while we're in the process of setting them up.
 	// Not ideal, but for now it's good enough.
@@ -124,9 +113,7 @@ func runWorker(conn db.Conn) {
 
 		wg.Add(1)
 		go func() {
-			if publicInterface != "" {
-				updateNAT(publicInterface, containers, connections)
-			}
+			updateNAT(containers, connections)
 			wg.Done()
 		}()
 
@@ -146,8 +133,12 @@ func runWorker(conn db.Conn) {
 	})
 }
 
-func updateNAT(publicInterface string, containers []db.Container,
-	connections []db.Connection) {
+func updateNAT(containers []db.Container, connections []db.Connection) {
+	publicInterface, err := getPublicInterface()
+	if err != nil {
+		log.WithError(err).Error("Failed to get public interface")
+		return
+	}
 
 	targetRules := generateTargetNatRules(publicInterface, containers, connections)
 	currRules, err := generateCurrentNatRules()
@@ -722,30 +713,6 @@ func patchPorts(id string) (br, quilt string) {
 	return ipdef.IFName("br_" + id), ipdef.IFName("q_" + id)
 }
 
-// Use like the `ip` command
-//
-// For example, if you wanted the stats on `eth0` (as in the command
-// `ip link show eth0`) then you would pass in ("", "link show %s", "eth0")
-//
-// If you wanted to run this in namespace `ns1` then you would use
-// ("ns1", "link show %s", "eth0")
-//
-// Stored in a variable so we can mock it out for the unit tests.
-var ipExecVerbose = func(namespace, format string, args ...interface{}) (
-	stdout, stderr []byte, err error) {
-	cmd := fmt.Sprintf(format, args...)
-	cmd = fmt.Sprintf("ip %s", cmd)
-	if namespace != "" {
-		cmd = fmt.Sprintf("ip netns exec %s %s", namespace, cmd)
-	}
-	return shVerbose(cmd)
-}
-
-func sh(format string, args ...interface{}) error {
-	_, _, err := shVerbose(format, args...)
-	return err
-}
-
 // Returns (Stdout, Stderr, error)
 //
 // It's critical that the error returned here is the exact error
@@ -818,7 +785,8 @@ func deleteNatRule(rule ipRule) error {
 func addNatRule(rule ipRule) error {
 	args := fmt.Sprintf("%s %s", rule.chain, rule.opts)
 	cmd := fmt.Sprintf("iptables -t nat -A %s", args)
-	err := sh(cmd)
+	_, _, err := shVerbose(cmd)
+
 	if err != nil {
 		return fmt.Errorf("failed to add NAT rule %s: %s", cmd, err)
 	}
@@ -827,17 +795,29 @@ func addNatRule(rule ipRule) error {
 
 // getPublicInterface gets the interface with the default route.
 func getPublicInterface() (string, error) {
-	stdout, _, err := ipExecVerbose("", "route list")
+	routes, err := routeList(nil, 0)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("route list: %s", err)
 	}
 
-	matches := regexp.MustCompile("default .* dev (.*)").FindSubmatch(stdout)
-	if len(matches) < 2 {
-		return "", errors.New("no default route")
+	var defaultRoute *netlink.Route
+	for _, r := range routes {
+		if r.Dst == nil {
+			defaultRoute = &r
+			break
+		}
 	}
 
-	return strings.TrimSpace(string(matches[1])), nil
+	if defaultRoute == nil {
+		return "", errors.New("missing default route")
+	}
+
+	link, err := linkByIndex(defaultRoute.LinkIndex)
+	if err != nil {
+		return "", fmt.Errorf("default route missing interface: %s", err)
+	}
+
+	return link.Attrs().Name, err
 }
 
 func addOrDelFlows(flows []interface{}, add bool) error {
@@ -957,3 +937,6 @@ func (ofrs OFRuleSlice) Get(ii int) interface{} {
 func (ofrs OFRuleSlice) Len() int {
 	return len(ofrs)
 }
+
+var routeList = netlink.RouteList
+var linkByIndex = netlink.LinkByIndex

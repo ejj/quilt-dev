@@ -1,10 +1,14 @@
 package network
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/NetSys/quilt/db"
+	"github.com/NetSys/quilt/minion/ipdef"
+	"github.com/stretchr/testify/assert"
+	"github.com/vishvananda/netlink"
 )
 
 func TestMakeIPRule(t *testing.T) {
@@ -108,6 +112,47 @@ func TestGenerateCurrentNatRules(t *testing.T) {
 		t.Errorf("Generated wrong routes.\nExpected:\n%+v\n\nGot:\n%+v\n",
 			exp, actual)
 	}
+}
+
+func TestGetPublicInterface(t *testing.T) {
+	routeList = func(link netlink.Link, family int) ([]netlink.Route, error) {
+		return nil, errors.New("not implemented")
+	}
+	linkByIndex = func(index int) (netlink.Link, error) {
+		if index == 5 {
+			link := netlink.GenericLink{}
+			link.LinkAttrs.Name = "link name"
+			return &link, nil
+		}
+		return nil, errors.New("unknown")
+	}
+
+	res, err := getPublicInterface()
+	assert.Empty(t, res)
+	assert.EqualError(t, err, "route list: not implemented")
+
+	var routes []netlink.Route
+	routeList = func(link netlink.Link, family int) ([]netlink.Route, error) {
+		return routes, nil
+	}
+	res, err = getPublicInterface()
+	assert.Empty(t, res)
+	assert.EqualError(t, err, "missing default route")
+
+	routes = []netlink.Route{{Dst: &ipdef.QuiltSubnet}}
+	res, err = getPublicInterface()
+	assert.Empty(t, res)
+	assert.EqualError(t, err, "missing default route")
+
+	routes = []netlink.Route{{LinkIndex: 2}}
+	res, err = getPublicInterface()
+	assert.Empty(t, res)
+	assert.EqualError(t, err, "default route missing interface: unknown")
+
+	routes = []netlink.Route{{LinkIndex: 5}}
+	res, err = getPublicInterface()
+	assert.Equal(t, "link name", res)
+	assert.NoError(t, err)
 }
 
 func TestMakeOFRule(t *testing.T) {
