@@ -47,11 +47,14 @@ COV_SKIP= /api/client/mocks \
 
 COV_PKG = $(subst github.com/NetSys/quilt,,$(PACKAGES))
 coverage: $(addsuffix .cov, $(filter-out $(COV_SKIP), $(COV_PKG)))
-	gover
+	echo "" > coverage.txt
+	for f in $^ ; do \
+	    cat .$$f >> coverage.txt ; \
+	done
 
 %.cov:
-	go test -coverprofile=.$@.coverprofile .$*
-	go tool cover -html=.$@.coverprofile -o .$@.html
+	go test -coverprofile=.$@ .$*
+	go tool cover -html=.$@ -o .$@.html
 
 format: scripts/format
 	gofmt -w -s $(NOVENDOR)

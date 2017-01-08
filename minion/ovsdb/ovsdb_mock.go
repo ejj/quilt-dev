@@ -10,10 +10,10 @@ import (
 // NewFakeOvsdbClient returns an ovsdb client with mocked ovsdb.
 func NewFakeOvsdbClient() Client {
 	// Clears uuidMap for new test.
-	uuidMap = map[string]string{}
 
 	return Client{fakeOvsdbClient{
 		databases: map[string]fakeDb{},
+		uuidMap:   map[string]string{},
 	}}
 }
 
@@ -22,6 +22,7 @@ const defaultOFPort float64 = 123
 
 type fakeOvsdbClient struct {
 	databases map[string]fakeDb
+	uuidMap   map[string]string
 }
 
 type fakeDb struct {
@@ -33,9 +34,6 @@ type fakeTable struct {
 }
 
 type fakeRow map[string]interface{}
-
-// Mapping of UUIDName:UUID.
-var uuidMap map[string]string
 
 type fakeCondition struct {
 	column, function, value string
@@ -70,6 +68,7 @@ func (cond fakeCondition) matches(row fakeRow) bool {
 }
 
 type fakeMutation struct {
+	fc      fakeOvsdbClient
 	column  string
 	mutator string
 	value   interface{}
@@ -94,7 +93,7 @@ func (mutation fakeMutation) applySet(row *fakeRow, set *ovs.OvsSet) int {
 	data := column[1].([]interface{})
 
 	uuidGeneric := set.GoSet[0].(ovs.UUID).GoUUID
-	uuid, ok := uuidMap[uuidGeneric]
+	uuid, ok := mutation.fc.uuidMap[uuidGeneric]
 	if !ok {
 		uuid = uuidGeneric
 	}
@@ -233,7 +232,8 @@ func (client fakeOvsdbClient) insertOp(database string, op ovs.Operation) (
 				for _, elem := range v.GoSet {
 					var uuidToAdd string
 					uuidGeneric := elem.(ovs.UUID).GoUUID
-					if actualUUID, ok := uuidMap[uuidGeneric]; ok {
+					actualUUID, ok := client.uuidMap[uuidGeneric]
+					if ok {
 						uuidToAdd = actualUUID
 					} else {
 						uuidToAdd = uuidGeneric
@@ -273,7 +273,7 @@ func (client fakeOvsdbClient) insertOp(database string, op ovs.Operation) (
 
 	// Update UUIDName if existed.
 	if op.UUIDName != "" {
-		uuidMap[op.UUIDName] = uuid
+		client.uuidMap[op.UUIDName] = uuid
 	}
 
 	// Update table and db.
@@ -353,7 +353,7 @@ func (client fakeOvsdbClient) mutateOp(database string, op ovs.Operation) (
 		return ovs.OperationResult{}, nil
 	}
 
-	mutations := parseOperationMutations(op)
+	mutations := client.parseOperationMutations(op)
 	mutationCount := 0
 
 Outer:
@@ -439,11 +439,12 @@ func parseOperationCondition(op ovs.Operation) []fakeCondition {
 	return conditions
 }
 
-func parseOperationMutations(op ovs.Operation) []fakeMutation {
+func (client fakeOvsdbClient) parseOperationMutations(op ovs.Operation) []fakeMutation {
 	mutations := []fakeMutation{}
 	for _, mutGeneric := range op.Mutations {
 		mutation := mutGeneric.([]interface{})
 		mutations = append(mutations, fakeMutation{
+			fc:      client,
 			column:  mutation[0].(string),
 			mutator: mutation[1].(string),
 			value:   mutation[2],
