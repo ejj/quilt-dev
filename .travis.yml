@@ -15,7 +15,7 @@ script:
     - make all check lint format-check coverage docker-build-quilt docker-build-tester
 
 after_success:
-    - goveralls -coverprofile=./gover.coverprofile
+    - bash <(curl -s https://codecov.io/bash)
     - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
           docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
           docker push quilt/quilt;
