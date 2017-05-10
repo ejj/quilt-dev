@@ -15,6 +15,7 @@ import (
 	"github.com/quilt/quilt/cluster/google"
 	"github.com/quilt/quilt/cluster/machine"
 	"github.com/quilt/quilt/cluster/vagrant"
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/util"
@@ -34,6 +35,8 @@ type provider interface {
 
 // Store the providers in a variable so we can change it in the tests
 var allProviders = []db.Provider{db.Amazon, db.DigitalOcean, db.Google, db.Vagrant}
+
+var c = counter.New("Cluster")
 
 type launchLoc struct {
 	provider db.Provider
@@ -70,6 +73,7 @@ const (
 func Run(conn db.Conn) {
 	var clst *cluster
 	for range conn.TriggerTick(30, db.ClusterTable, db.MachineTable, db.ACLTable).C {
+		c.Inc("Run")
 		clst = updateCluster(conn, clst)
 
 		// Somewhat of a crude rate-limit of once every five seconds to avoid
@@ -182,10 +186,13 @@ func (clst cluster) updateCloud(machines []joinMachine, act action) {
 
 		switch act {
 		case boot:
+			c.Inc("Boot")
 			err = providerInst.Boot(providerMachines)
 		case stop:
+			c.Inc("Stop")
 			err = providerInst.Stop(providerMachines)
 		case updateIPs:
+			c.Inc("Update Floating IP")
 			err = providerInst.UpdateFloatingIPs(providerMachines)
 		}
 
@@ -346,6 +353,7 @@ func (clst cluster) syncACLs(adminACLs []string, appACLs []db.PortRange,
 			setACLs = acls
 		}
 
+		c.Inc("SetACLs")
 		if err := prvdr.SetACLs(setACLs); err != nil {
 			log.WithError(err).Warnf("Could not update ACLs on %s in %s.",
 				loc.provider, loc.region)
@@ -455,6 +463,7 @@ func (clst cluster) get() ([]joinMachine, error) {
 		wg.Add(1)
 		go func(loc launchLoc, p provider) {
 			defer wg.Done()
+			c.Inc("List")
 			machines, err := p.List()
 			cloudMachinesChan <- listResponse{loc, machines, err}
 		}(loc, p)

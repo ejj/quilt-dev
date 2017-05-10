@@ -44,6 +44,8 @@ func (s server) GetMinionConfig(cts context.Context,
 
 	var cfg pb.MinionConfig
 
+	c.Inc("GetMinionConfig")
+
 	m := s.MinionSelf()
 	cfg.Role = db.RoleToPB(m.Role)
 	cfg.PrivateIP = m.PrivateIP
@@ -65,9 +67,9 @@ func (s server) GetMinionConfig(cts context.Context,
 
 func (s server) SetMinionConfig(ctx context.Context,
 	msg *pb.MinionConfig) (*pb.Reply, error) {
-	go s.Txn(db.EtcdTable,
-		db.MinionTable).Run(func(view db.Database) error {
 
+	c.Inc("SetMinionConfig")
+	go s.Txn(db.EtcdTable, db.MinionTable).Run(func(view db.Database) error {
 		minion := view.MinionSelf()
 		minion.PrivateIP = msg.PrivateIP
 		minion.Blueprint = msg.Blueprint

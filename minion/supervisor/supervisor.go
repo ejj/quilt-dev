@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/docker"
 	"github.com/quilt/quilt/minion/supervisor/images"
@@ -29,6 +30,8 @@ var imageMap = map[string]string{
 
 const etcdHeartbeatInterval = "500"
 const etcdElectionTimeout = "5000"
+
+var c = counter.New("Supervisor")
 
 var conn db.Conn
 var dk docker.Client
@@ -61,6 +64,7 @@ func Run(_conn db.Conn, _dk docker.Client, _role db.Role) {
 
 // run calls out to the Docker client to run the container specified by name.
 func run(name string, args ...string) {
+	c.Inc("Docker Run " + name)
 	isRunning, err := dk.IsRunning(name)
 	if err != nil {
 		log.WithError(err).Warnf("could not check running status of %s.", name)
@@ -113,5 +117,6 @@ func nodeName(IP string) string {
 
 // execRun() is a global variable so that it can be mocked out by the unit tests.
 var execRun = func(name string, arg ...string) error {
+	c.Inc(name)
 	return exec.Command(name, arg...).Run()
 }

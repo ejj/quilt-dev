@@ -37,9 +37,8 @@ func (db Database) InsertACL() ACL {
 
 // SelectFromACL gets all acls in the database that satisfy 'check'.
 func (db Database) SelectFromACL(check func(ACL) bool) []ACL {
-	aclTable := db.accessTable(ACLTable)
-	result := []ACL{}
-	for _, row := range aclTable.rows {
+	var result []ACL
+	for _, row := range db.selectRows(ACLTable) {
 		if check == nil || check(row.(ACL)) {
 			result = append(result, row.(ACL))
 		}

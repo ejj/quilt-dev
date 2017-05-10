@@ -9,11 +9,14 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/docker"
 	"github.com/quilt/quilt/minion/network/plugin"
 	"github.com/quilt/quilt/util"
 )
+
+var c = counter.New("Scheduler")
 
 // Run blocks implementing the scheduler module.
 func Run(conn db.Conn, dk docker.Client) {

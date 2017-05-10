@@ -44,9 +44,8 @@ func (db Database) InsertContainer() Container {
 
 // SelectFromContainer gets all containers in the database that satisfy 'check'.
 func (db Database) SelectFromContainer(check func(Container) bool) []Container {
-	containerTable := db.accessTable(ContainerTable)
 	var result []Container
-	for _, row := range containerTable.rows {
+	for _, row := range db.selectRows(ContainerTable) {
 		if check == nil || check(row.(Container)) {
 			result = append(result, row.(Container))
 		}

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/quilt/quilt/counter"
 )
 
 // The Database is the central storage location for all state in the system.  The policy
@@ -45,6 +47,12 @@ type idCounter struct {
 	curID int
 }
 
+var c = counter.New("Database")
+var commitC = counter.New("Database Commit")
+var removeC = counter.New("Database Remove")
+var insertC = counter.New("Database Insert")
+var selectC = counter.New("Database Select")
+
 // New creates a connection to a brand new database.
 func New() Conn {
 	db := Database{make(map[TableType]*table), &idCounter{}}
@@ -74,6 +82,7 @@ func (cn Conn) Txn(tables ...TableType) Transaction {
 // independent sets of tables. Otherwise, each transaction runs sequentially on it's
 // database without conflicting with other transactions.
 func (tr Transaction) Run(do func(db Database) error) error {
+	c.Inc("Transact")
 	tr.lockTables()
 	defer tr.unlockTables()
 
@@ -121,6 +130,7 @@ func (cn Conn) TriggerTick(seconds int, tt ...TableType) Trigger {
 		for {
 			select {
 			case trigger.C <- struct{}{}:
+				c.Inc("Trigger")
 			default:
 			}
 
@@ -163,7 +173,13 @@ func (t Trigger) Stop() {
 	close(t.stop)
 }
 
+func (db Database) selectRows(tt TableType) map[int]row {
+	selectC.Inc(string(tt))
+	return db.accessTable(tt).rows
+}
+
 func (db Database) insert(r row) {
+	insertC.Inc(reflect.TypeOf(r).String())
 	table := db.accessTable(getTableType(r))
 	table.shouldAlert = true
 	table.rows[r.getID()] = r
@@ -171,6 +187,7 @@ func (db Database) insert(r row) {
 
 // Commit updates the database with the data contained in row.
 func (db Database) Commit(r row) {
+	commitC.Inc(reflect.TypeOf(r).String())
 	rid := r.getID()
 	table := db.accessTable(getTableType(r))
 	old := table.rows[rid]
@@ -187,6 +204,7 @@ func (db Database) Commit(r row) {
 
 // Remove deletes row from the database.
 func (db Database) Remove(r row) {
+	removeC.Inc(reflect.TypeOf(r).String())
 	table := db.accessTable(getTableType(r))
 	delete(table.rows, r.getID())
 	table.shouldAlert = true

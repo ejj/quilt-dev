@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/minion/nl"
@@ -23,6 +24,8 @@ type IPTables interface {
 	Delete(string, string, ...string) error
 	List(string, string) ([]string, error)
 }
+
+var iptC = counter.New("Network IP Tables")
 
 func runNat(conn db.Conn, inboundPubIntf, outboundPubIntf string) {
 	tables := []db.TableType{db.ContainerTable, db.ConnectionTable, db.MinionTable}
@@ -149,6 +152,7 @@ func syncChain(ipt IPTables, table, chain string, target []string) error {
 
 	for _, r := range rulesToDel {
 		ruleBlueprint := strings.Split(r.(string), " ")
+		iptC.Inc("Delete")
 		if err := ipt.Delete(table, chain, ruleBlueprint...); err != nil {
 			return fmt.Errorf("iptables delete: %s", err)
 		}
@@ -156,6 +160,7 @@ func syncChain(ipt IPTables, table, chain string, target []string) error {
 
 	for _, r := range rulesToAdd {
 		ruleBlueprint := strings.Split(r.(string), " ")
+		iptC.Inc("Append")
 		if err := ipt.Append(table, chain, ruleBlueprint...); err != nil {
 			return fmt.Errorf("iptables append: %s", err)
 		}
@@ -165,6 +170,7 @@ func syncChain(ipt IPTables, table, chain string, target []string) error {
 }
 
 func getRules(ipt IPTables, table, chain string) (rules []string, err error) {
+	iptC.Inc("List")
 	rawRules, err := ipt.List(table, chain)
 	if err != nil {
 		return nil, err
@@ -283,6 +289,7 @@ func setDefaultRules(ipt IPTables) error {
 		},
 	}
 	for _, r := range rules {
+		iptC.Inc("Append Unique")
 		err := ipt.AppendUnique(r.table, r.chain, r.ruleBlueprint...)
 		if err != nil {
 			return fmt.Errorf("iptables append: %s", err)
@@ -293,6 +300,7 @@ func setDefaultRules(ipt IPTables) error {
 
 // getDefaultRouteIntfImpl gets the interface with the default route.
 func getDefaultRouteIntfImpl() (string, error) {
+	c.Inc("Get Default Route")
 	routes, err := nl.N.RouteList()
 	if err != nil {
 		return "", fmt.Errorf("route list: %s", err)

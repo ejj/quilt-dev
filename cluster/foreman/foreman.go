@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/pb"
 
@@ -38,9 +39,13 @@ type minion struct {
 	mark bool /* Mark and sweep garbage collection. */
 }
 
+var c = counter.New("Foreman")
+
 // Init the first time the foreman operates on a new namespace.  It queries the currently
 // running VMs for their previously assigned roles, and writes them to the database.
 func Init(conn db.Conn) {
+	c.Inc("Initialize")
+
 	for _, m := range minions {
 		m.client.Close()
 	}
@@ -68,6 +73,8 @@ func Init(conn db.Conn) {
 
 // RunOnce should be called regularly to allow the foreman to update minion cfg.
 func RunOnce(conn db.Conn) {
+	c.Inc("Run")
+
 	var blueprint string
 	var machines []db.Machine
 	conn.Txn(db.ClusterTable,
@@ -87,14 +94,22 @@ func RunOnce(conn db.Conn) {
 
 	forEachMinion(updateConfig)
 	forEachMinion(func(m *minion) {
-		if m.connected != m.machine.Connected {
-			tr := conn.Txn(db.MachineTable)
-			tr.Run(func(view db.Database) error {
-				m.machine.Connected = m.connected
-				view.Commit(m.machine)
-				return nil
-			})
+		if m.connected == m.machine.Connected {
+			return
 		}
+
+		if m.connected {
+			c.Inc("Minion Connected")
+		} else {
+			c.Inc("Minion Disconnected")
+		}
+
+		tr := conn.Txn(db.MachineTable)
+		tr.Run(func(view db.Database) error {
+			m.machine.Connected = m.connected
+			view.Commit(m.machine)
+			return nil
+		})
 	})
 
 	var etcdIPs []string
@@ -198,8 +213,10 @@ func updateConfig(m *minion) {
 }
 
 func newClientImpl(ip string) (client, error) {
+	c.Inc("New Minion Client")
 	cc, err := grpc.Dial(ip+":9999", grpc.WithInsecure())
 	if err != nil {
+		c.Inc("New Minion Client Error")
 		return nil, err
 	}
 
@@ -209,22 +226,29 @@ func newClientImpl(ip string) (client, error) {
 // Storing in a variable allows us to mock it out for unit tests
 var newClient = newClientImpl
 
-func (c clientImpl) getMinion() (pb.MinionConfig, error) {
+func (cl clientImpl) getMinion() (pb.MinionConfig, error) {
+	c.Inc("Get Minion")
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	cfg, err := c.GetMinionConfig(ctx, &pb.Request{})
+	cfg, err := cl.GetMinionConfig(ctx, &pb.Request{})
 	if err != nil {
+		c.Inc("Get Minion Error")
 		return pb.MinionConfig{}, err
 	}
 
 	return *cfg, nil
 }
 
-func (c clientImpl) setMinion(cfg pb.MinionConfig) error {
+func (cl clientImpl) setMinion(cfg pb.MinionConfig) error {
+	c.Inc("Set Minion")
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	_, err := c.SetMinionConfig(ctx, &cfg)
+	_, err := cl.SetMinionConfig(ctx, &cfg)
+	if err != nil {
+		c.Inc("Set Minion Error")
+	}
 	return err
 }
 
-func (c clientImpl) Close() {
-	c.cc.Close()
+func (cl clientImpl) Close() {
+	c.Inc("Close Client")
+	cl.cc.Close()
 }

@@ -32,9 +32,8 @@ func (db Database) InsertPlacement() Placement {
 
 // SelectFromPlacement gets all placements in the database that satisfy 'check'.
 func (db Database) SelectFromPlacement(check func(Placement) bool) []Placement {
-	placementTable := db.accessTable(PlacementTable)
 	var result []Placement
-	for _, row := range placementTable.rows {
+	for _, row := range db.selectRows(PlacementTable) {
 		if check == nil || check(row.(Placement)) {
 			result = append(result, row.(Placement))
 		}

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/minion/ipdef"
 	"github.com/quilt/quilt/minion/network/openflow"
 	"github.com/quilt/quilt/minion/nl"
@@ -30,6 +31,8 @@ var (
 )
 
 type driver struct{}
+
+var c = counter.New("Network Plugin")
 
 const mtu int = 1400
 
@@ -65,12 +68,14 @@ func Run() {
 
 // GetCapabilities returns the capabilities of this network driver.
 func (d driver) GetCapabilities() (*dnet.CapabilitiesResponse, error) {
+	c.Inc("Capabilities")
 	return &dnet.CapabilitiesResponse{Scope: dnet.LocalScope}, nil
 }
 
 // CreateEndpoint acknowledges the request, but does not actually do anything.
 func (d driver) CreateEndpoint(req *dnet.CreateEndpointRequest) (
 	*dnet.CreateEndpointResponse, error) {
+	c.Inc("Create Endpoint")
 
 	addr, _, err := net.ParseCIDR(req.Interface.Address)
 	if err != nil {
@@ -123,6 +128,7 @@ func (d driver) CreateEndpoint(req *dnet.CreateEndpointRequest) (
 
 // EndpointInfo will return an error if the endpoint does not exist.
 func (d driver) EndpointInfo(req *dnet.InfoRequest) (*dnet.InfoResponse, error) {
+	c.Inc("Endpoint Info")
 	if _, err := getOuterLink(req.EndpointID); err != nil {
 		return nil, err
 	}
@@ -131,6 +137,7 @@ func (d driver) EndpointInfo(req *dnet.InfoRequest) (*dnet.InfoResponse, error) 
 
 // DeleteEndpoint cleans up state associated with a docker endpoint.
 func (d driver) DeleteEndpoint(req *dnet.DeleteEndpointRequest) error {
+	c.Inc("Delete Endpoint")
 	peerBr, peerQuilt := ipdef.PatchPorts(req.EndpointID)
 	err := vsctl([][]string{
 		{"del-port", ipdef.QuiltBridge, ipdef.IFName(req.EndpointID)},
@@ -154,6 +161,7 @@ func (d driver) DeleteEndpoint(req *dnet.DeleteEndpointRequest) error {
 
 // Join method is invoked when a Sandbox is attached to an endpoint.
 func (d driver) Join(req *dnet.JoinRequest) (*dnet.JoinResponse, error) {
+	c.Inc("Join")
 	inner := ipdef.IFName("tmp_" + req.EndpointID)
 	resp := &dnet.JoinResponse{}
 	resp.Gateway = ipdef.GatewayIP.String()

@@ -75,6 +75,7 @@ func (t *table) alert() {
 
 		select {
 		case trigger.C <- struct{}{}:
+			c.Inc("Trigger")
 		default:
 		}
 	}

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/quilt/quilt/cluster"
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/stitch"
@@ -13,6 +14,8 @@ import (
 var myIP = util.MyIP
 var defaultDiskSize = 32
 
+var c = counter.New("Engine")
+
 // Run updates the database in response to stitch changes in the cluster table.
 func Run(conn db.Conn) {
 	for range conn.TriggerTick(30, db.ClusterTable, db.MachineTable, db.ACLTable).C {
@@ -22,6 +25,8 @@ func Run(conn db.Conn) {
 }
 
 func updateTxn(view db.Database) error {
+	c.Inc("Update")
+
 	cluster, err := view.GetCluster()
 	if err != nil {
 		return err

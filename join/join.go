@@ -2,7 +2,13 @@
 // similar in spirit to a database Join.
 package join
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/quilt/quilt/counter"
+)
+
+var c = counter.New("Join")
 
 // A Pair represents an element from the left slice and an element from the right slice,
 // that have been matched by a join.
@@ -23,6 +29,7 @@ type Pair struct {
 // the score closest to zero (inclusive). Negative scores are never matched.
 func Join(lSlice, rSlice interface{}, score func(left, right interface{}) int) (
 	pairs []Pair, lonelyLefts, lonelyRights []interface{}) {
+	c.Inc("Join")
 
 	val := reflect.ValueOf(rSlice)
 	len := val.Len()
@@ -92,6 +99,7 @@ type List interface {
 // as keys instead.
 func HashJoin(lSlice, rSlice List, lKey, rKey func(interface{}) interface{}) (
 	pairs []Pair, lonelyLefts, lonelyRights []interface{}) {
+	c.Inc("HashJoin")
 
 	var identity = func(val interface{}) interface{} {
 		return val

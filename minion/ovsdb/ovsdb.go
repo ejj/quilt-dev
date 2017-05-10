@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/quilt/quilt/counter"
 	ovs "github.com/socketplane/libovsdb"
 )
 
@@ -114,6 +115,8 @@ type LoadBalancer struct {
 type row map[string]interface{}
 type mutation interface{}
 
+var c = counter.New("Ovsdb")
+
 // Base on RFC 7047, empty condition should return all rows from a table. However,
 // libovsdb does not seem to support that yet. This is the simplist, most common solution
 // to it.
@@ -126,12 +129,14 @@ func newCondition(column, function string, value interface{}) []interface{} {
 // Open creates a new Ovsdb connection.
 // It's stored in a variable so we can mock it out for the unit tests.
 var Open = func() (Client, error) {
+	c.Inc("Open")
 	odb, err := ovs.Connect("127.0.0.1", 6640)
 	return client{odb}, err
 }
 
 // CreateLogicalSwitch creates a new logical switch in OVN.
 func (ovsdb client) CreateLogicalSwitch(lswitch string) error {
+	c.Inc("Create Logical Switch")
 	insertOp := ovs.Operation{
 		Op:    "insert",
 		Table: "Logical_Switch",
@@ -147,6 +152,7 @@ func (ovsdb client) CreateLogicalSwitch(lswitch string) error {
 }
 
 func (ovsdb client) LogicalSwitchExists(lswitch string) (bool, error) {
+	c.Inc("Logical Switch Exists")
 	matches, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
 		Op:    "select",
 		Table: "Logical_Switch",
@@ -161,6 +167,7 @@ func (ovsdb client) LogicalSwitchExists(lswitch string) (bool, error) {
 
 func (ovsdb client) UpdateSwitchPortAddresses(lportName string,
 	addresses []string) error {
+	c.Inc("Update Switch Port Addresses")
 	results, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
 		Op:    "update",
 		Table: "Logical_Switch_Port",
@@ -178,6 +185,7 @@ func (ovsdb client) UpdateSwitchPortAddresses(lportName string,
 
 // ListSwitchPorts lists the logical ports in OVN.
 func (ovsdb client) ListSwitchPorts() ([]SwitchPort, error) {
+	c.Inc("List Switch Ports")
 	portReply, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
 		Op:    "select",
 		Table: "Logical_Switch_Port",
@@ -200,6 +208,7 @@ func (ovsdb client) ListSwitchPorts() ([]SwitchPort, error) {
 
 // ListSwitchPort lists the logical port corresponding to the given name.
 func (ovsdb client) ListSwitchPort(name string) (SwitchPort, error) {
+	c.Inc("List Switch Port")
 	portReply, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
 		Op:    "select",
 		Table: "Logical_Switch_Port",
@@ -233,6 +242,7 @@ func parseLogicalSwitchPort(port row) (SwitchPort, error) {
 
 // CreateSwitchPort creates a new logical port in OVN.
 func (ovsdb client) CreateSwitchPort(lswitch string, lport SwitchPort) error {
+	c.Inc("Create Switch Port")
 	portRow := map[string]interface{}{
 		"name": lport.Name,
 		"type": lport.Type,
@@ -273,6 +283,7 @@ func (ovsdb client) CreateSwitchPort(lswitch string, lport SwitchPort) error {
 
 // DeleteSwitchPort removes a logical port from OVN.
 func (ovsdb client) DeleteSwitchPort(lswitch string, lport SwitchPort) error {
+	c.Inc("Delete Switch Port")
 	deleteOp := ovs.Operation{
 		Op:    "delete",
 		Table: "Logical_Switch_Port",
@@ -295,6 +306,7 @@ func (ovsdb client) DeleteSwitchPort(lswitch string, lport SwitchPort) error {
 }
 
 func (ovsdb client) LogicalRouterExists(lrouter string) (bool, error) {
+	c.Inc("Logical Router Exists")
 	matches, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
 		Op:    "select",
 		Table: "Logical_Router",
@@ -309,6 +321,7 @@ func (ovsdb client) LogicalRouterExists(lrouter string) (bool, error) {
 
 // CreateLogicalRouter creates a new logical switch in OVN.
 func (ovsdb client) CreateLogicalRouter(lrouter string) error {
+	c.Inc("Create Logical Router")
 	insertOp := ovs.Operation{
 		Op:    "insert",
 		Table: "Logical_Router",
@@ -325,6 +338,7 @@ func (ovsdb client) CreateLogicalRouter(lrouter string) error {
 
 // ListRouterPorts lists the logical router ports in OVN.
 func (ovsdb client) ListRouterPorts() ([]RouterPort, error) {
+	c.Inc("List Router Ports")
 	portReply, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
 		Op:    "select",
 		Table: "Logical_Router_Port",
@@ -349,6 +363,7 @@ func (ovsdb client) ListRouterPorts() ([]RouterPort, error) {
 
 // CreateRouterPort creates a new logical port in OVN.
 func (ovsdb client) CreateRouterPort(lrouter string, port RouterPort) error {
+	c.Inc("Create Router Port")
 	ovsPort := map[string]interface{}{
 		"name":     port.Name,
 		"networks": newOvsSet(port.Networks),
@@ -383,6 +398,7 @@ func (ovsdb client) CreateRouterPort(lrouter string, port RouterPort) error {
 
 // DeleteRouterPort removes a logical port from OVN.
 func (ovsdb client) DeleteRouterPort(lrouter string, lport RouterPort) error {
+	c.Inc("Delete Router Port")
 	deleteOp := ovs.Operation{
 		Op:    "delete",
 		Table: "Logical_Router_Port",
@@ -407,6 +423,7 @@ func (ovsdb client) DeleteRouterPort(lrouter string, lport RouterPort) error {
 
 // ListACLs lists the access control rules in OVN.
 func (ovsdb client) ListACLs() ([]ACL, error) {
+	c.Inc("List ACLs")
 	aclReply, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
 		Op:    "select",
 		Table: "ACL",
@@ -445,6 +462,7 @@ func (ovsdb client) ListACLs() ([]ACL, error) {
 // be wildcarded by passing a value less than 0.
 func (ovsdb client) CreateACL(lswitch, direction string, priority int,
 	match, action string) error {
+	c.Inc("Create ACL")
 	aclRow := map[string]interface{}{
 		"priority": int(math.Max(0.0, float64(priority))),
 		"action":   action,
@@ -483,6 +501,7 @@ func (ovsdb client) CreateACL(lswitch, direction string, priority int,
 
 // DeleteACL removes an access control rule from OVN.
 func (ovsdb client) DeleteACL(lswitch string, ovsdbACL ACL) error {
+	c.Inc("Delete ACL")
 	deleteOp := ovs.Operation{
 		Op:    "delete",
 		Table: "ACL",
@@ -514,6 +533,7 @@ type AddressSet struct {
 
 // ListAddressSets lists the address sets in OVN.
 func (ovsdb client) ListAddressSets() ([]AddressSet, error) {
+	c.Inc("List Address Sets")
 	result := []AddressSet{}
 
 	addressReply, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
@@ -536,6 +556,7 @@ func (ovsdb client) ListAddressSets() ([]AddressSet, error) {
 
 // CreateAddressSet creates an address set in OVN.
 func (ovsdb client) CreateAddressSet(name string, addresses []string) error {
+	c.Inc("Create Address Set")
 	addrs := newOvsSet(addresses)
 	addressRow := map[string]interface{}{
 		"name":      name,
@@ -557,6 +578,7 @@ func (ovsdb client) CreateAddressSet(name string, addresses []string) error {
 
 // DeleteAddressSet removes an address set from OVN.
 func (ovsdb client) DeleteAddressSet(name string) error {
+	c.Inc("DeleteAddressSet")
 	deleteOp := ovs.Operation{
 		Op:    "delete",
 		Table: "Address_Set",
@@ -573,6 +595,7 @@ func (ovsdb client) DeleteAddressSet(name string) error {
 // OpenFlowPorts returns a map from interface name to OpenFlow port number for every
 // interface in ovsdb.  Those interfaces without a port number are silently omitted.
 func (ovsdb client) OpenFlowPorts() (map[string]int, error) {
+	c.Inc("OpenFlow Ports")
 	reply, err := ovsdb.Transact("Open_vSwitch", ovs.Operation{
 		Op:    "select",
 		Table: "Interface",
@@ -604,6 +627,7 @@ func (ovsdb client) OpenFlowPorts() (map[string]int, error) {
 
 func (ovsdb client) CreateLoadBalancer(lswitch, name string,
 	vips map[string]string) error {
+	c.Inc("Create Load Balancer")
 	insertOp := ovs.Operation{
 		Op:    "insert",
 		Table: "Load_Balancer",
@@ -632,6 +656,7 @@ func (ovsdb client) CreateLoadBalancer(lswitch, name string,
 
 // DeleteLoadBalancer removes a load balancer from OVN.
 func (ovsdb client) DeleteLoadBalancer(lswitch string, lb LoadBalancer) error {
+	c.Inc("Delete Load Balancer")
 	deleteOp := ovs.Operation{
 		Op:    "delete",
 		Table: "Load_Balancer",
@@ -657,6 +682,7 @@ func (ovsdb client) DeleteLoadBalancer(lswitch string, lb LoadBalancer) error {
 
 // ListLoadBalancers lists the load balancers in OVN.
 func (ovsdb client) ListLoadBalancers() ([]LoadBalancer, error) {
+	c.Inc("List Load Balancers")
 	reply, err := ovsdb.Transact("OVN_Northbound", ovs.Operation{
 		Op:    "select",
 		Table: "Load_Balancer",

@@ -8,6 +8,7 @@ import (
 
 	"github.com/quilt/quilt/api"
 	apiServer "github.com/quilt/quilt/api/server"
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/docker"
 	"github.com/quilt/quilt/minion/etcd"
@@ -21,6 +22,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 )
+
+var c = counter.New("Minion")
 
 // Run blocks executing the minion.
 func Run(role db.Role, inboundPubIntf, outboundPubIntf string) {

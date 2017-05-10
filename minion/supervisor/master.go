@@ -36,6 +36,7 @@ func runMasterOnce() {
 	leader := etcdRow.Leader
 
 	if oldIP != IP || !util.StrSliceEqual(oldEtcdIPs, etcdIPs) {
+		c.Inc("Reset Etcd")
 		Remove(images.Etcd)
 	}
 

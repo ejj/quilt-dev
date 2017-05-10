@@ -22,9 +22,8 @@ func (db Database) InsertCluster() Cluster {
 
 // SelectFromCluster gets all clusters in the database that satisfy 'check'.
 func (db Database) SelectFromCluster(check func(Cluster) bool) []Cluster {
-	clusterTable := db.accessTable(ClusterTable)
-	result := []Cluster{}
-	for _, row := range clusterTable.rows {
+	var result []Cluster
+	for _, row := range db.selectRows(ClusterTable) {
 		if check == nil || check(row.(Cluster)) {
 			result = append(result, row.(Cluster))
 		}

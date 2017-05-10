@@ -40,9 +40,8 @@ func (db Database) InsertMachine() Machine {
 
 // SelectFromMachine gets all machines in the database that satisfy the 'check'.
 func (db Database) SelectFromMachine(check func(Machine) bool) []Machine {
-	machineTable := db.accessTable(MachineTable)
-	result := []Machine{}
-	for _, row := range machineTable.rows {
+	var result []Machine
+	for _, row := range db.selectRows(MachineTable) {
 		if check == nil || check(row.(Machine)) {
 			result = append(result, row.(Machine))
 		}

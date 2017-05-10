@@ -58,6 +58,7 @@ func cleanupPlacements(ctx *context) {
 				valid = append(valid, dbc)
 				continue
 			}
+			c.Inc("Reschedule Container")
 			dbc.Minion = ""
 			ctx.unassigned = append(ctx.unassigned, dbc)
 			ctx.changed = append(ctx.changed, dbc)
@@ -74,6 +75,7 @@ Outer:
 	for _, dbc := range ctx.unassigned {
 		for i, m := range minions {
 			if validPlacement(ctx.constraints, *m, m.containers, dbc) {
+				c.Inc("Place Container")
 				dbc.Minion = m.PrivateIP
 				ctx.changed = append(ctx.changed, dbc)
 				m.containers = append(m.containers, dbc)

@@ -24,9 +24,8 @@ func (db Database) InsertImage() Image {
 
 // SelectFromImage gets all images in the database that satisfy 'check'.
 func (db Database) SelectFromImage(check func(Image) bool) []Image {
-	imageTable := db.accessTable(ImageTable)
-	result := []Image{}
-	for _, row := range imageTable.rows {
+	var result []Image
+	for _, row := range db.selectRows(ImageTable) {
 		if check == nil || check(row.(Image)) {
 			result = append(result, row.(Image))
 		}

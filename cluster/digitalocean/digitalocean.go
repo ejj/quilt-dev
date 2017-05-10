@@ -14,6 +14,7 @@ import (
 	"github.com/quilt/quilt/cluster/cloudcfg"
 	"github.com/quilt/quilt/cluster/digitalocean/client"
 	"github.com/quilt/quilt/cluster/machine"
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/util"
 
@@ -27,6 +28,8 @@ const DefaultRegion string = "sfo1"
 
 // Regions supported by the Digital Ocean API
 var Regions = []string{"nyc1", "nyc2", "lon1", "sfo1", "sfo2"}
+
+var c = counter.New("Digital Ocean")
 
 var apiKeyPath = ".digitalocean/key"
 

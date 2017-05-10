@@ -44,6 +44,7 @@ func runOnce(conn db.Conn) error {
 		return nil
 	}
 
+	c.Inc("Change SSH Keys")
 	return util.WriteFile(authorizedKeysFile, []byte(m.AuthorizedKeys), 0644)
 }
 

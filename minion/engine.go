@@ -17,6 +17,7 @@ func updatePolicy(view db.Database, blueprint string) {
 		return
 	}
 
+	c.Inc("Update Policy")
 	updateImages(view, compiled)
 	updateContainers(view, compiled)
 	updateConnections(view, compiled)

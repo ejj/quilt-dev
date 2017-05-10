@@ -38,9 +38,8 @@ func (db Database) EtcdLeader() bool {
 
 // SelectFromEtcd gets all Etcd rows in the database that satisfy the 'check'.
 func (db Database) SelectFromEtcd(check func(Etcd) bool) []Etcd {
-	etcdTable := db.accessTable(EtcdTable)
 	result := []Etcd{}
-	for _, row := range etcdTable.rows {
+	for _, row := range db.selectRows(EtcdTable) {
 		if check == nil || check(row.(Etcd)) {
 			result = append(result, row.(Etcd))
 		}

@@ -5,6 +5,7 @@ package nl
 import (
 	"net"
 
+	"github.com/quilt/quilt/counter"
 	"github.com/vishvananda/netlink"
 )
 
@@ -30,33 +31,42 @@ type Link netlink.Link
 // Route wraps netlink.Route.
 type Route netlink.Route
 
+var c = counter.New("Netlink")
+
 func (n n) AddVeth(name, peer string, mtu int) error {
+	c.Inc("Add Veth")
 	return netlink.LinkAdd(&netlink.Veth{
 		LinkAttrs: netlink.LinkAttrs{Name: name, MTU: mtu},
 		PeerName:  peer})
 }
 
 func (n n) LinkSetUp(link Link) error {
+	c.Inc("Link Up")
 	return netlink.LinkSetUp(link)
 }
 
 func (n n) LinkDel(link Link) error {
+	c.Inc("Link Del")
 	return netlink.LinkDel(link)
 }
 
 func (n n) LinkByName(name string) (Link, error) {
+	c.Inc("Get Link")
 	return netlink.LinkByName(name)
 }
 
 func (n n) LinkByIndex(index int) (Link, error) {
+	c.Inc("Get Link")
 	return netlink.LinkByIndex(index)
 }
 
 func (n n) AddrAdd(link Link, ip net.IPNet) error {
+	c.Inc("Add Address")
 	return netlink.AddrAdd(link, &netlink.Addr{IPNet: &ip})
 }
 
 func (n n) RouteList() ([]Route, error) {
+	c.Inc("List Routes")
 	res, err := netlink.RouteList(nil, 0)
 
 	var routes []Route

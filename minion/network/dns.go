@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/minion/ipdef"
@@ -24,6 +25,8 @@ type dnsTable struct {
 }
 
 var table *dnsTable
+
+var dnsC = counter.New("Network Dns")
 
 func runDNS(conn db.Conn) {
 	go syncHostnames(conn)
@@ -117,6 +120,7 @@ func serveDNSOnce(conn db.Conn) {
 }
 
 func updateTable(table *dnsTable, hostnames []db.Hostname) *dnsTable {
+	dnsC.Inc("Update Server")
 	records := hostnamesToDNS(hostnames)
 	if table != nil {
 		table.recordLock.Lock()
@@ -142,6 +146,7 @@ func updateTable(table *dnsTable, hostnames []db.Hostname) *dnsTable {
 }
 
 func (table *dnsTable) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
+	dnsC.Inc("Request")
 	defer w.Close()
 
 	log.Debug("DNS Request: ", req)
@@ -198,6 +203,7 @@ func (table *dnsTable) genResponse(req *dns.Msg) *dns.Msg {
 }
 
 func (table *dnsTable) lookupA(name string) []net.IP {
+	dnsC.Inc("Lookup External")
 	if strings.HasSuffix(name, ".q.") {
 		table.recordLock.Lock()
 		ip := table.records[name]

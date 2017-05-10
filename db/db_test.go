@@ -50,7 +50,7 @@ func TestMachine(t *testing.T) {
 
 		db.Remove(m)
 
-		if err := SelectMachineCheck(db, nil, []Machine{}); err != nil {
+		if err := SelectMachineCheck(db, nil, nil); err != nil {
 			return err
 		}
 		return nil

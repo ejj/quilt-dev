@@ -64,6 +64,7 @@ func allocateContainerIPs(view db.Database, ipSet map[string]struct{}) error {
 	}
 
 	for _, dbc := range unassigned {
+		c.Inc("Allocate Container IP")
 		ip, err := allocateIP(ipSet, ipdef.QuiltSubnet)
 		if err != nil {
 			return err
@@ -118,6 +119,7 @@ func updateLabelIPs(view db.Database, ipSet map[string]struct{}) error {
 		dbl.ContainerIPs = containerIPs[dbl.Label]
 
 		if dbl.IP == "" {
+			c.Inc("Allocate Label IP")
 			ip, err := allocateIP(ipSet, ipdef.QuiltSubnet)
 			if err != nil {
 				return err

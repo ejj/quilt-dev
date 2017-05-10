@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/client"
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 
 	log "github.com/Sirupsen/logrus"
@@ -11,6 +12,8 @@ import (
 
 const electionTTL = 30
 const leaderKey = "/leader"
+
+var electorC = counter.New("Etcd Elector")
 
 // Run blocks implementing leader election.
 func runElection(conn db.Conn, store Store) {
@@ -27,6 +30,7 @@ func watchLeader(conn db.Conn, store Store) {
 	watch := store.Watch(leaderKey, 1*time.Second)
 	trigg := conn.TriggerTick(tickRate, db.EtcdTable)
 	for {
+		electorC.Inc("Update Leader")
 		leader, _ := store.Get(leaderKey)
 		conn.Txn(db.EtcdTable).Run(func(view db.Database) error {
 			etcdRows := view.SelectFromEtcd(nil)
@@ -54,6 +58,7 @@ func campaign(conn db.Conn, store Store) {
 		case <-trigg.C:
 		}
 
+		c.Inc("Campaign")
 		etcdRows := conn.SelectFromEtcd(nil)
 
 		minion := conn.MinionSelf()
@@ -78,8 +83,10 @@ func campaign(conn db.Conn, store Store) {
 		}
 
 		if err == nil {
+			c.Inc("Campaign Won")
 			commitLeader(conn, true, IP)
 		} else {
+			c.Inc("Campaign Lost")
 			clientErr, ok := err.(client.Error)
 			if !ok || clientErr.Code != client.ErrorCodeNodeExist {
 				log.WithError(err).Warn("Error setting leader key")

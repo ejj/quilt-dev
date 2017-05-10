@@ -8,6 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/etcd/client"
+	"github.com/quilt/quilt/counter"
 )
 
 // A Store implements a consistent distributed key value store similar to Etcd.
@@ -27,8 +28,11 @@ type store struct {
 	kapi client.KeysAPI
 }
 
+var c = counter.New("Etcd")
+
 // NewStore creates a new consensus store and returns it.
 func NewStore() Store {
+	c.Inc("NewStore")
 	var etcd client.Client
 	for {
 		var err error
@@ -49,20 +53,22 @@ func NewStore() Store {
 }
 
 func (s store) Watch(path string, rateLimit time.Duration) chan struct{} {
-	c := make(chan struct{})
+	chn := make(chan struct{})
 	go func() {
 		watcher := s.kapi.Watcher(path, &client.WatcherOptions{Recursive: true})
 		for {
-			c <- struct{}{}
+			chn <- struct{}{}
 			time.Sleep(rateLimit)
+			c.Inc("Watch Next")
 			watcher.Next(context.Background())
 		}
 	}()
 
-	return c
+	return chn
 }
 
 func (s store) Mkdir(dir string, ttl time.Duration) error {
+	c.Inc("Mkdir")
 	_, err := s.kapi.Set(ctx(), dir, "", &client.SetOptions{
 		Dir:       true,
 		PrevExist: client.PrevNoExist,
@@ -80,6 +86,7 @@ type Tree struct {
 }
 
 func (s store) GetTree(dir string) (Tree, error) {
+	c.Inc("GetTree")
 	resp, err := s.kapi.Get(ctx(), dir, &client.GetOptions{
 		Recursive: true,
 		Sort:      false,
@@ -110,6 +117,7 @@ func (s store) GetTree(dir string) (Tree, error) {
 }
 
 func (s store) Get(path string) (string, error) {
+	c.Inc("Get")
 	resp, err := s.kapi.Get(ctx(), path, &client.GetOptions{
 		Quorum: true,
 	})
@@ -121,22 +129,26 @@ func (s store) Get(path string) (string, error) {
 }
 
 func (s store) Delete(path string) error {
+	c.Inc("Delete")
 	_, err := s.kapi.Delete(ctx(), path, &client.DeleteOptions{Recursive: true})
 	return err
 }
 
 func (s store) Create(path, value string, ttl time.Duration) error {
+	c.Inc("Create")
 	_, err := s.kapi.Set(ctx(), path, value,
 		&client.SetOptions{PrevExist: client.PrevNoExist, TTL: ttl})
 	return err
 }
 
 func (s store) Set(path, value string, ttl time.Duration) error {
+	c.Inc("Set")
 	_, err := s.kapi.Set(ctx(), path, value, &client.SetOptions{TTL: ttl})
 	return err
 }
 
 func (s store) Refresh(path, value string, ttl time.Duration) error {
+	c.Inc("Refresh")
 	_, err := s.kapi.Set(ctx(), path, value,
 		&client.SetOptions{
 			PrevValue: value,
@@ -147,6 +159,7 @@ func (s store) Refresh(path, value string, ttl time.Duration) error {
 }
 
 func (s store) RefreshDir(dir string, ttl time.Duration) error {
+	c.Inc("Refresh")
 	_, err := s.kapi.Set(ctx(), dir, "",
 		&client.SetOptions{
 			Dir:       true,

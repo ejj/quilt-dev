@@ -27,9 +27,8 @@ func (db Database) InsertMinion() Minion {
 
 // SelectFromMinion gets all minions in the database that satisfy the 'check'.
 func (db Database) SelectFromMinion(check func(Minion) bool) []Minion {
-	minionTable := db.accessTable(MinionTable)
-	result := []Minion{}
-	for _, row := range minionTable.rows {
+	var result []Minion
+	for _, row := range db.selectRows(MinionTable) {
 		if check == nil || check(row.(Minion)) {
 			result = append(result, row.(Minion))
 		}

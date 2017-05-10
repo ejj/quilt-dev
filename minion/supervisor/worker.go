@@ -65,6 +65,7 @@ func runWorkerOnce() {
 	IP := minion.PrivateIP
 
 	if !util.StrSliceEqual(oldEtcdIPs, etcdIPs) {
+		c.Inc("Reset Etcd")
 		Remove(images.Etcd)
 	}
 
@@ -82,6 +83,7 @@ func runWorkerOnce() {
 	if leaderIP == "" || IP == "" {
 		return
 	}
+	c.Inc("Update OVS IPs")
 
 	err := execRun("ovs-vsctl", "set", "Open_vSwitch", ".",
 		fmt.Sprintf("external_ids:ovn-remote=\"tcp:%s:6640\"", leaderIP),

@@ -19,9 +19,8 @@ func (db Database) InsertHostname() Hostname {
 
 // SelectFromHostname gets all hostnames in the database that satisfy 'check'.
 func (db Database) SelectFromHostname(check func(Hostname) bool) []Hostname {
-	hostnameTable := db.accessTable(HostnameTable)
-	result := []Hostname{}
-	for _, row := range hostnameTable.rows {
+	var result []Hostname
+	for _, row := range db.selectRows(HostnameTable) {
 		if check == nil || check(row.(Hostname)) {
 			result = append(result, row.(Hostname))
 		}

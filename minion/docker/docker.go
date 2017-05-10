@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/minion/ipdef"
 	"github.com/quilt/quilt/util"
 
@@ -89,6 +90,8 @@ type client interface {
 	ListNetworks() ([]dkc.Network, error)
 }
 
+var c = counter.New("Docker")
+
 // New creates client to the docker daemon.
 func New(sock string) Client {
 	var client *dkc.Client
@@ -108,6 +111,8 @@ func New(sock string) Client {
 
 // Run creates and starts a new container in accordance RunOptions.
 func (dk Client) Run(opts RunOptions) (string, error) {
+	c.Inc("Run")
+
 	env := []string{}
 	for k, v := range opts.Env {
 		env = append(env, k+"="+v)
@@ -151,6 +156,8 @@ func (dk Client) Run(opts RunOptions) (string, error) {
 
 // ConfigureNetwork makes a request to docker to create a network running on driver.
 func (dk Client) ConfigureNetwork(driver string) error {
+	c.Inc("Configure Network")
+
 	networks, err := dk.ListNetworks()
 	if err == nil {
 		for _, nw := range networks {
@@ -186,6 +193,7 @@ func (dk Client) Remove(name string) error {
 
 // RemoveID stops and deletes the container with the given ID.
 func (dk Client) RemoveID(id string) error {
+	c.Inc("Remove")
 	err := dk.RemoveContainer(dkc.RemoveContainerOptions{ID: id, Force: true})
 	if err != nil {
 		return err
@@ -197,6 +205,7 @@ func (dk Client) RemoveID(id string) error {
 // Build builds an image with the given name and Dockerfile, and returns the
 // ID of the resulting image.
 func (dk Client) Build(name, dockerfile string) (id string, err error) {
+	c.Inc("Build")
 	tarBuf, err := util.ToTar("Dockerfile", 0644, dockerfile)
 	if err != nil {
 		return "", err
@@ -225,6 +234,7 @@ func (dk Client) Build(name, dockerfile string) (id string, err error) {
 // <repo>:<tag>@<digestFormat>:<digest>.
 // If no tag is specified, then the "latest" tag is applied.
 func (dk Client) Pull(image string) error {
+	c.Inc("Pull")
 	repo, tag := dkc.ParseRepositoryTag(image)
 	if tag == "" {
 		tag = "latest"
@@ -268,6 +278,7 @@ func (dk Client) getCacheEntry(repo, tag string) *cacheEntry {
 
 // Push pushes the given image to the registry.
 func (dk Client) Push(registry, image string) error {
+	c.Inc("Push")
 	repo, tag := dkc.ParseRepositoryTag(image)
 	return dk.PushImage(dkc.PushImageOptions{
 		Registry: registry,
@@ -279,6 +290,7 @@ func (dk Client) Push(registry, image string) error {
 // List returns a slice of all running containers.  The List can be be filtered with the
 // supplied `filters` map.
 func (dk Client) List(filters map[string][]string) ([]Container, error) {
+	c.Inc("List")
 	return dk.list(filters, false)
 }
 
@@ -306,6 +318,7 @@ func (dk Client) list(filters map[string][]string, all bool) ([]Container, error
 
 // Get returns a Container corresponding to the supplied ID.
 func (dk Client) Get(id string) (Container, error) {
+	c.Inc("Get")
 	dkc, err := dk.InspectContainer(id)
 	if err != nil {
 		return Container{}, err
@@ -359,6 +372,7 @@ func keys(networks map[string]dkc.ContainerNetwork) []string {
 
 // IsRunning returns true if the container with the given `name` is running.
 func (dk Client) IsRunning(name string) (bool, error) {
+	c.Inc("Is Running?")
 	containers, err := dk.List(map[string][]string{
 		"name": {name},
 	})

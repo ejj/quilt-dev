@@ -89,6 +89,7 @@ func ofctlRun() {
 }
 
 var execRun = func(name string, arg ...string) error {
+	c.Inc(name)
 	return exec.Command(name, arg...).Run()
 }
 

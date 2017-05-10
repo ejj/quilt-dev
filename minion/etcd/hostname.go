@@ -30,12 +30,14 @@ func runHostnameOnce(conn db.Conn, store Store) error {
 	}
 
 	if conn.EtcdLeader() {
+		c.Inc("Run Hostname Leader")
 		hostnames := db.HostnameSlice(conn.SelectFromHostname(nil))
 		err := writeEtcdSlice(store, hostnamePath, etcdStr, hostnames)
 		if err != nil {
 			return fmt.Errorf("etcd write error: %s", err)
 		}
 	} else {
+		c.Inc("Run Hostname Worker")
 		var etcdHostnames []db.Hostname
 		json.Unmarshal([]byte(etcdStr), &etcdHostnames)
 		conn.Txn(db.HostnameTable).Run(func(view db.Database) error {

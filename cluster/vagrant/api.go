@@ -52,6 +52,7 @@ func createVagrantFile() string {
 
 // initMachine creates the files necessary to initialize a vagrant machine.
 func initMachine(cloudConfig string, size string, id string) error {
+	c.Inc("Initialize Machine")
 	vdir, err := vagrantDir()
 	if err != nil {
 		return err
@@ -88,6 +89,7 @@ func initMachine(cloudConfig string, size string, id string) error {
 }
 
 func up(id string) error {
+	c.Inc("Up")
 	_, stderr, err := shell(id, `vagrant --machine-readable up`)
 	if err != nil {
 		log.Errorf("Failed to start Vagrant machine: %s", string(stderr))
@@ -97,6 +99,7 @@ func up(id string) error {
 }
 
 func destroy(id string) error {
+	c.Inc("Destroy")
 	_, stderr, err := shell(id,
 		`vagrant --machine-readable destroy -f; cd ../; rm -rf %s`)
 	if err != nil {
@@ -107,6 +110,7 @@ func destroy(id string) error {
 }
 
 func publicIP(id string) (string, error) {
+	c.Inc("Get Public IP")
 	ip, stderr, err := shell(id, fmt.Sprintf(
 		`vagrant ssh -c "ip -f inet addr show %s | grep -Po 'inet \K[\d.]+'"`,
 		inboundPublicInterface))
@@ -118,6 +122,7 @@ func publicIP(id string) (string, error) {
 }
 
 func status(id string) (string, error) {
+	c.Inc("Status")
 	output, stderr, err := shell(id, `vagrant --machine-readable status`)
 	if err != nil {
 		log.Errorf("Failed to retrieve Vagrant machine status: %s",
@@ -137,6 +142,7 @@ func status(id string) (string, error) {
 }
 
 func list() ([]string, error) {
+	c.Inc("List")
 	subdirs := []string{}
 	vdir, err := vagrantDir()
 	if err != nil {
@@ -158,6 +164,7 @@ func list() ([]string, error) {
 
 func addBox(name string, provider string) error {
 	/* Adding a box fails if it already exists, hence the check. */
+	c.Inc("Box Add")
 	exists, err := containsBox(name)
 	if err == nil && exists {
 		return nil
@@ -171,6 +178,7 @@ func addBox(name string, provider string) error {
 }
 
 func containsBox(name string) (bool, error) {
+	c.Inc("Box List")
 	output, err := exec.Command(vagrantCmd, []string{"--machine-readable", "box",
 		"list"}...).Output()
 	if err != nil {
@@ -187,6 +195,7 @@ func containsBox(name string) (bool, error) {
 }
 
 func shell(id string, commands string) ([]byte, []byte, error) {
+	c.Inc("Shell")
 	chdir := `(cd %s; `
 	vdir, err := vagrantDir()
 	if err != nil {

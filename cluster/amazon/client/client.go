@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/quilt/quilt/counter"
 )
 
 // A Client to an Amazon EC2 region.
@@ -36,16 +37,21 @@ type awsClient struct {
 	client *ec2.EC2
 }
 
+var c = counter.New("Amazon")
+
 func (ac awsClient) DescribeInstances(filters []*ec2.Filter) (
 	*ec2.DescribeInstancesOutput, error) {
+	c.Inc("List Instances")
 	return ac.client.DescribeInstances(&ec2.DescribeInstancesInput{Filters: filters})
 }
 
 func (ac awsClient) RunInstances(in *ec2.RunInstancesInput) (*ec2.Reservation, error) {
+	c.Inc("Run Instances")
 	return ac.client.RunInstances(in)
 }
 
 func (ac awsClient) TerminateInstances(ids []string) error {
+	c.Inc("Term Instances")
 	_, err := ac.client.TerminateInstances(&ec2.TerminateInstancesInput{
 		InstanceIds: stringSlice(ids)})
 	return err
@@ -53,6 +59,7 @@ func (ac awsClient) TerminateInstances(ids []string) error {
 
 func (ac awsClient) DescribeSpotInstanceRequests(ids []string, filters []*ec2.Filter) (
 	[]*ec2.SpotInstanceRequest, error) {
+	c.Inc("List Spots")
 	resp, err := ac.client.DescribeSpotInstanceRequests(
 		&ec2.DescribeSpotInstanceRequestsInput{
 			SpotInstanceRequestIds: stringSlice(ids),
@@ -63,6 +70,7 @@ func (ac awsClient) DescribeSpotInstanceRequests(ids []string, filters []*ec2.Fi
 func (ac awsClient) RequestSpotInstances(spotPrice string, count int64,
 	launchSpec *ec2.RequestSpotLaunchSpecification) (
 	[]*ec2.SpotInstanceRequest, error) {
+	c.Inc("Request Spots")
 
 	resp, err := ac.client.RequestSpotInstances(&ec2.RequestSpotInstancesInput{
 		SpotPrice:           &spotPrice,
@@ -74,6 +82,7 @@ func (ac awsClient) RequestSpotInstances(spotPrice string, count int64,
 	return resp.SpotInstanceRequests, err
 }
 func (ac awsClient) CancelSpotInstanceRequests(ids []string) error {
+	c.Inc("Cancel Spots")
 	_, err := ac.client.CancelSpotInstanceRequests(
 		&ec2.CancelSpotInstanceRequestsInput{
 			SpotInstanceRequestIds: stringSlice(ids)})
@@ -81,6 +90,7 @@ func (ac awsClient) CancelSpotInstanceRequests(ids []string) error {
 }
 
 func (ac awsClient) DescribeSecurityGroup(name string) ([]*ec2.SecurityGroup, error) {
+	c.Inc("List Security Groups")
 	resp, err := ac.client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{{
 			Name:   aws.String("group-name"),
@@ -92,6 +102,7 @@ func (ac awsClient) DescribeSecurityGroup(name string) ([]*ec2.SecurityGroup, er
 }
 
 func (ac awsClient) CreateSecurityGroup(name, description string) (string, error) {
+	c.Inc("Create Security Group")
 	csgResp, err := ac.client.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
 		GroupName:   &name,
 		Description: &description})
@@ -103,6 +114,7 @@ func (ac awsClient) CreateSecurityGroup(name, description string) (string, error
 
 func (ac awsClient) AuthorizeSecurityGroup(name, src string,
 	ranges []*ec2.IpPermission) error {
+	c.Inc("Authorize Security Group")
 
 	var srcPtr *string
 	if src != "" {
@@ -118,6 +130,7 @@ func (ac awsClient) AuthorizeSecurityGroup(name, src string,
 }
 
 func (ac awsClient) RevokeSecurityGroup(name string, ranges []*ec2.IpPermission) error {
+	c.Inc("Revoke Security Group")
 	_, err := ac.client.RevokeSecurityGroupIngress(
 		&ec2.RevokeSecurityGroupIngressInput{
 			GroupName:     &name,
@@ -126,6 +139,7 @@ func (ac awsClient) RevokeSecurityGroup(name string, ranges []*ec2.IpPermission)
 }
 
 func (ac awsClient) DescribeAddresses() ([]*ec2.Address, error) {
+	c.Inc("List Addresses")
 	resp, err := ac.client.DescribeAddresses(nil)
 	if err != nil {
 		return nil, err
@@ -134,6 +148,7 @@ func (ac awsClient) DescribeAddresses() ([]*ec2.Address, error) {
 }
 
 func (ac awsClient) AssociateAddress(id, allocationID string) error {
+	c.Inc("Associate Address")
 	_, err := ac.client.AssociateAddress(&ec2.AssociateAddressInput{
 		InstanceId:   &id,
 		AllocationId: &allocationID})
@@ -141,12 +156,14 @@ func (ac awsClient) AssociateAddress(id, allocationID string) error {
 }
 
 func (ac awsClient) DisassociateAddress(associationID string) error {
+	c.Inc("Disassociate Address")
 	_, err := ac.client.DisassociateAddress(&ec2.DisassociateAddressInput{
 		AssociationId: &associationID})
 	return err
 }
 
 func (ac awsClient) DescribeVolumes(id string) ([]*ec2.Volume, error) {
+	c.Inc("List Volumes")
 	resp, err := ac.client.DescribeVolumes(&ec2.DescribeVolumesInput{
 		Filters: []*ec2.Filter{{
 			Name:   aws.String("volume-id"),
@@ -159,6 +176,7 @@ func (ac awsClient) DescribeVolumes(id string) ([]*ec2.Volume, error) {
 
 // New creates a new Client.
 func New(region string) Client {
+	c.Inc("New Client")
 	session := session.New()
 	session.Config.Region = &region
 	return awsClient{ec2.New(session)}

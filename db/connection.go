@@ -24,9 +24,8 @@ func (db Database) InsertConnection() Connection {
 
 // SelectFromConnection gets all connections in the database that satisfy 'check'.
 func (db Database) SelectFromConnection(check func(Connection) bool) []Connection {
-	connTable := db.accessTable(ConnectionTable)
 	var result []Connection
-	for _, row := range connTable.rows {
+	for _, row := range db.selectRows(ConnectionTable) {
 		if check == nil || check(row.(Connection)) {
 			result = append(result, row.(Connection))
 		}

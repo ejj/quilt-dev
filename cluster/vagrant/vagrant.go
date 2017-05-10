@@ -8,6 +8,7 @@ import (
 	"github.com/quilt/quilt/cluster/acl"
 	"github.com/quilt/quilt/cluster/cloudcfg"
 	"github.com/quilt/quilt/cluster/machine"
+	"github.com/quilt/quilt/counter"
 	"github.com/satori/go.uuid"
 )
 
@@ -15,6 +16,8 @@ import (
 type Cluster struct {
 	namespace string
 }
+
+var c = counter.New("Vagrant")
 
 // New creates a new vagrant cluster.
 func New(namespace string) (*Cluster, error) {

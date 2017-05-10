@@ -31,9 +31,11 @@ func runContainerOnce(conn db.Conn, store Store) error {
 	}
 
 	if conn.EtcdLeader() {
+		c.Inc("Run Container Leader")
 		return updateLeader(conn, store, etcdStr)
 	}
 
+	c.Inc("Run Container Worker")
 	updateNonLeader(conn, etcdStr)
 	return nil
 }

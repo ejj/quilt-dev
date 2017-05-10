@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/minion/ipdef"
 	"github.com/quilt/quilt/minion/ovsdb"
 )
@@ -164,9 +165,12 @@ var staticFlows = []string{
 	"table=1,priority=400,reg0=2,actions=output:NXM_NX_REG1[]",
 }
 
+var c = counter.New("OpenFlow")
+
 // ReplaceFlows adds flows associated with the provided containers, and removes all
 // other flows.
 func ReplaceFlows(containers []Container) error {
+	c.Inc("Replace Flows")
 	ofports, err := openflowPorts()
 	if err != nil {
 		return err
@@ -179,6 +183,7 @@ func ReplaceFlows(containers []Container) error {
 	// reports no changes.  The `diff-flows` check should be removed once
 	// `replace-flows` is fixed upstream.
 	if ofctl("diff-flows", flows) != nil {
+		c.Inc("Flows Changed")
 		if err := ofctl("replace-flows", flows); err != nil {
 			return fmt.Errorf("ovs-ofctl: %s", err)
 		}
@@ -190,6 +195,7 @@ func ReplaceFlows(containers []Container) error {
 // AddFlows adds flows associated with the provided containers without touching flows
 // that may already be installed.
 func AddFlows(containers []Container) error {
+	c.Inc("Add Flows")
 	ofports, err := openflowPorts()
 	if err != nil {
 		return err
@@ -255,6 +261,7 @@ func openflowPorts() (map[string]int, error) {
 }
 
 var ofctl = func(action string, flows []string) error {
+	c.Inc("ovs-ofctl")
 	cmd := exec.Command("ovs-ofctl", "-O", "OpenFlow13", action,
 		ipdef.QuiltBridge, "/dev/stdin")
 

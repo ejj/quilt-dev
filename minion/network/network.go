@@ -6,6 +6,7 @@
 package network
 
 import (
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/minion/ipdef"
@@ -20,6 +21,8 @@ const (
 	loadBalancerSwitchPort = "loadBalancerSwitchPort"
 	loadBalancerRouterPort = "loadBalancerRouterPort"
 )
+
+var c = counter.New("Network")
 
 // Run blocks implementing the network services.
 func Run(conn db.Conn, inboundPubIntf, outboundPubIntf string) {
@@ -41,6 +44,8 @@ func Run(conn db.Conn, inboundPubIntf, outboundPubIntf string) {
 // and creating load balancers.  The specialized OpenFlow rules Quilt requires
 // are managed by the workers individuallly.
 func runMaster(conn db.Conn) {
+	c.Inc("Run Master")
+
 	var labels []db.Label
 	var containers []db.Container
 	var connections []db.Connection

@@ -30,12 +30,14 @@ func runConnectionOnce(conn db.Conn, store Store) error {
 	}
 
 	if conn.EtcdLeader() {
+		c.Inc("Run Connection Leader")
 		slice := db.ConnectionSlice(conn.SelectFromConnection(nil))
 		err = writeEtcdSlice(store, connectionPath, etcdStr, slice)
 		if err != nil {
 			return fmt.Errorf("etcd write error: %s", err)
 		}
 	} else {
+		c.Inc("Run Connection Worker")
 		var etcdConns []db.Connection
 		json.Unmarshal([]byte(etcdStr), &etcdConns)
 		conn.Txn(db.ConnectionTable).Run(func(view db.Database) error {
