@@ -156,8 +156,7 @@ Machines in the deployment.
 ## Next Steps: Downloading Other Specs
 You can download specs into your `QUILT_PATH` by executing
 `quilt get <IMPORT_PATH>`, where `<IMPORT_PATH>` is a path to a repository
-containing specs (e.g. `github.com/quilt/nginx`). You can read more about this
-functionality [here](https://github.com/quilt/quilt/blob/master/docs/Stitch.md#quilt_path).
+containing specs (e.g. `github.com/quilt/nginx`).
 
 ## Next Steps: Writing your own Quilt Spec
 
