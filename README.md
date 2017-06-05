@@ -138,4 +138,4 @@ instructions on how to get your Quilt deployment up and running.
 ## Contact Us
 
 Questions? Comments? Feedback?  Please feel free to reach out to us
-[here](http://quilt.io/contact.php)!
+[here](http://quilt.io/#contact)!
