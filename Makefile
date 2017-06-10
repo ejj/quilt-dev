@@ -2,7 +2,7 @@ export GO15VENDOREXPERIMENT=1
 PACKAGES=$(shell govendor list -no-status +local)
 NOVENDOR=$(shell find . -path -prune -o -path ./vendor -prune -o -name '*.go' -print)
 LINE_LENGTH_EXCLUDE=./api/pb/pb.pb.go \
-		    ./cluster/amazon/mock_client.go \
+		    ./cluster/amazon/client/mocks/% \
 		    ./cluster/cloudcfg/template.go \
 		    ./cluster/digitalocean/mock_client.go \
 		    ./cluster/google/mock_client_test.go \
@@ -49,6 +49,7 @@ release: linux darwin
 COV_SKIP= /api/client/mocks \
 	  /api/pb \
 	  /cluster/provider/mocks \
+	  /cluster/amazon/client/mocks \
 	  /constants \
 	  /minion/pprofile \
 	  /minion/ovsdb/mocks \

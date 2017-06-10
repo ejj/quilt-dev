@@ -436,11 +436,11 @@ func TestListACLs(t *testing.T) {
 	api := new(mockTransact)
 	odb := Client(client{api})
 
-	ops := ovs.Operation{
+	op := ovs.Operation{
 		Op:    "select",
 		Table: "ACL",
 		Where: noCondition}
-	api.On("Transact", "OVN_Northbound", ops).Return(nil, anErr).Once()
+	api.On("Transact", "OVN_Northbound", op).Return(nil, anErr).Once()
 	_, err := odb.ListACLs()
 	assert.EqualError(t, err, "transaction error: listing ACLs: err")
 
@@ -451,9 +451,8 @@ func TestListACLs(t *testing.T) {
 		"match":     "match",
 		"action":    "action",
 		"log":       false}
-	api.On("Transact", "OVN_Northbound", ops).Return(
-		[]ovs.OperationResult{{
-			Rows: []map[string]interface{}{r}}}, nil).Once()
+	api.On("Transact", "OVN_Northbound", op).Return([]ovs.OperationResult{{
+		Rows: []map[string]interface{}{r}}}, nil).Once()
 
 	acls, err := odb.ListACLs()
 	assert.NoError(t, err)
@@ -537,18 +536,18 @@ func TestListAddressSets(t *testing.T) {
 	api := new(mockTransact)
 	odb := Client(client{api})
 
-	ops := ovs.Operation{
+	op := ovs.Operation{
 		Op:    "select",
 		Table: "Address_Set",
 		Where: noCondition}
-	api.On("Transact", "OVN_Northbound", ops).Return(nil, errors.New("err")).Once()
+	api.On("Transact", "OVN_Northbound", op).Return(nil, errors.New("err")).Once()
 	_, err := odb.ListAddressSets()
 	assert.EqualError(t, err, "transaction error: list address sets: err")
 
 	r := map[string]interface{}{
 		"name":      "name",
 		"addresses": ""}
-	api.On("Transact", "OVN_Northbound", ops).Return(
+	api.On("Transact", "OVN_Northbound", op).Return(
 		[]ovs.OperationResult{{Rows: []map[string]interface{}{r}}}, nil).Once()
 	res, err := odb.ListAddressSets()
 	assert.NoError(t, err)
@@ -561,17 +560,17 @@ func TestCreateAddressSet(t *testing.T) {
 	api := new(mockTransact)
 	odb := Client(client{api})
 
-	ops := ovs.Operation{
+	op := ovs.Operation{
 		Op:    "insert",
 		Table: "Address_Set",
 		Row: map[string]interface{}{
 			"name":      "name",
 			"addresses": newOvsSet([]string{})}}
-	api.On("Transact", "OVN_Northbound", ops).Return(nil, errors.New("err")).Once()
+	api.On("Transact", "OVN_Northbound", op).Return(nil, errors.New("err")).Once()
 	err := odb.CreateAddressSet("name", nil)
 	assert.EqualError(t, err, "transaction error: creating address set: err")
 
-	api.On("Transact", "OVN_Northbound", ops).Return([]ovs.OperationResult{{}}, nil)
+	api.On("Transact", "OVN_Northbound", op).Return([]ovs.OperationResult{{}}, nil)
 	err = odb.CreateAddressSet("name", nil)
 	assert.NoError(t, err)
 }
@@ -582,15 +581,15 @@ func TestDeleteAddressSet(t *testing.T) {
 	api := new(mockTransact)
 	odb := Client(client{api})
 
-	ops := ovs.Operation{
+	op := ovs.Operation{
 		Op:    "delete",
 		Table: "Address_Set",
 		Where: newCondition("name", "==", "name")}
-	api.On("Transact", "OVN_Northbound", ops).Return(nil, errors.New("err")).Once()
+	api.On("Transact", "OVN_Northbound", op).Return(nil, errors.New("err")).Once()
 	err := odb.DeleteAddressSet("name")
 	assert.EqualError(t, err, "transaction error: deleting address set: err")
 
-	api.On("Transact", "OVN_Northbound", ops).Return([]ovs.OperationResult{{}}, nil)
+	api.On("Transact", "OVN_Northbound", op).Return([]ovs.OperationResult{{}}, nil)
 	err = odb.DeleteAddressSet("name")
 	assert.NoError(t, err)
 }
@@ -601,11 +600,11 @@ func TestOpenFlowPorts(t *testing.T) {
 	api := new(mockTransact)
 	odb := Client(client{api})
 
-	ops := ovs.Operation{
+	op := ovs.Operation{
 		Op:    "select",
 		Table: "Interface",
 		Where: noCondition}
-	api.On("Transact", "Open_vSwitch", ops).Return(nil, errors.New("err")).Once()
+	api.On("Transact", "Open_vSwitch", op).Return(nil, errors.New("err")).Once()
 	_, err := odb.OpenFlowPorts()
 	assert.EqualError(t, err, "select interface error: err")
 
@@ -613,7 +612,7 @@ func TestOpenFlowPorts(t *testing.T) {
 		{},
 		{"name": "bad"},
 		{"name": "name", "ofport": float64(12)}}}}
-	api.On("Transact", "Open_vSwitch", ops).Return(res, nil).Once()
+	api.On("Transact", "Open_vSwitch", op).Return(res, nil).Once()
 	mp, err := odb.OpenFlowPorts()
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]int{"name": 12}, mp)
@@ -625,11 +624,11 @@ func TestListLoadBalancers(t *testing.T) {
 	api := new(mockTransact)
 	odb := Client(client{api})
 
-	ops := ovs.Operation{
+	op := ovs.Operation{
 		Op:    "select",
 		Table: "Load_Balancer",
 		Where: noCondition}
-	api.On("Transact", "OVN_Northbound", ops).Return(nil, errors.New("err")).Once()
+	api.On("Transact", "OVN_Northbound", op).Return(nil, errors.New("err")).Once()
 	_, err := odb.ListLoadBalancers()
 	assert.EqualError(t, err, "transaction error: listing load balancers: err")
 
@@ -640,7 +639,7 @@ func TestListLoadBalancers(t *testing.T) {
 			[]interface{}{"vip", "addrs"},
 		}},
 	}
-	api.On("Transact", "OVN_Northbound", ops).Return(
+	api.On("Transact", "OVN_Northbound", op).Return(
 		[]ovs.OperationResult{{Rows: []map[string]interface{}{r}}}, nil).Once()
 	res, err := odb.ListLoadBalancers()
 	assert.NoError(t, err)

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/quilt/quilt/cluster/acl"
+	"github.com/quilt/quilt/cluster/amazon/client"
 	"github.com/quilt/quilt/cluster/cloudcfg"
 	"github.com/quilt/quilt/cluster/machine"
 	"github.com/quilt/quilt/join"
@@ -24,7 +25,7 @@ import (
 type Cluster struct {
 	namespace string
 	region    string
-	client    client
+	client    client.Client
 }
 
 type awsMachine struct {
@@ -87,7 +88,7 @@ func newAmazon(namespace, region string) *Cluster {
 	clst := &Cluster{
 		namespace: strings.ToLower(namespace),
 		region:    region,
-		client:    newClient(region),
+		client:    client.New(region),
 	}
 
 	return clst
@@ -173,26 +174,20 @@ func (clst *Cluster) bootReserved(br bootReq, count int64) error {
 
 func (clst *Cluster) bootSpot(br bootReq, count int64) error {
 	cloudConfig64 := base64.StdEncoding.EncodeToString([]byte(br.cfg))
-	resp, err := clst.client.RequestSpotInstances(
-		&ec2.RequestSpotInstancesInput{
-			SpotPrice:     aws.String(spotPrice),
-			InstanceCount: &count,
-			LaunchSpecification: &ec2.RequestSpotLaunchSpecification{
-				ImageId:          aws.String(amis[clst.region]),
-				InstanceType:     aws.String(br.size),
-				UserData:         &cloudConfig64,
-				SecurityGroupIds: []*string{aws.String(br.groupID)},
-				BlockDeviceMappings: []*ec2.BlockDeviceMapping{
-					blockDevice(br.diskSize),
-				},
-			},
-		})
+	spots, err := clst.client.RequestSpotInstances(spotPrice, count,
+		&ec2.RequestSpotLaunchSpecification{
+			ImageId:          aws.String(amis[clst.region]),
+			InstanceType:     aws.String(br.size),
+			UserData:         &cloudConfig64,
+			SecurityGroupIds: []*string{aws.String(br.groupID)},
+			BlockDeviceMappings: []*ec2.BlockDeviceMapping{
+				blockDevice(br.diskSize)}})
 	if err != nil {
 		return err
 	}
 
 	var ids []string
-	for _, request := range resp.SpotInstanceRequests {
+	for _, request := range spots {
 		ids = append(ids, *request.SpotInstanceRequestId)
 	}
 
@@ -237,16 +232,13 @@ func (clst *Cluster) Stop(machines []machine.Machine) error {
 }
 
 func (clst *Cluster) stopSpots(ids []string) error {
-	spots, err := clst.client.DescribeSpotInstanceRequests(
-		&ec2.DescribeSpotInstanceRequestsInput{
-			SpotInstanceRequestIds: aws.StringSlice(ids),
-		})
+	spots, err := clst.client.DescribeSpotInstanceRequests(ids, nil)
 	if err != nil {
 		return err
 	}
 
 	var instIDs []string
-	for _, spot := range spots.SpotInstanceRequests {
+	for _, spot := range spots {
 		if spot.InstanceId != nil {
 			instIDs = append(instIDs, *spot.InstanceId)
 		}
@@ -256,11 +248,8 @@ func (clst *Cluster) stopSpots(ids []string) error {
 	if len(instIDs) != 0 {
 		stopInstsErr = clst.stopInstances(instIDs)
 	}
-	_, cancelSpotsErr = clst.client.CancelSpotInstanceRequests(
-		&ec2.CancelSpotInstanceRequestsInput{
-			SpotInstanceRequestIds: aws.StringSlice(ids),
-		})
 
+	cancelSpotsErr = clst.client.CancelSpotInstanceRequests(ids)
 	switch {
 	case stopInstsErr == nil && cancelSpotsErr == nil:
 		return clst.wait(ids, false)
@@ -274,9 +263,7 @@ func (clst *Cluster) stopSpots(ids []string) error {
 }
 
 func (clst *Cluster) stopInstances(ids []string) error {
-	_, err := clst.client.TerminateInstances(&ec2.TerminateInstancesInput{
-		InstanceIds: aws.StringSlice(ids),
-	})
+	err := clst.client.TerminateInstances(ids)
 	if err != nil {
 		return err
 	}
@@ -287,18 +274,17 @@ var trackedSpotStates = aws.StringSlice(
 	[]string{ec2.SpotInstanceStateActive, ec2.SpotInstanceStateOpen})
 
 func (clst *Cluster) listSpots() (machines []awsMachine, err error) {
-	input := ec2.DescribeSpotInstanceRequestsInput{Filters: []*ec2.Filter{{
+	spots, err := clst.client.DescribeSpotInstanceRequests(nil, []*ec2.Filter{{
 		Name:   aws.String("state"),
 		Values: trackedSpotStates,
 	}, {
 		Name:   aws.String("launch.group-name"),
-		Values: []*string{aws.String(clst.namespace)}}}}
-	spotsResp, err := clst.client.DescribeSpotInstanceRequests(&input)
+		Values: []*string{aws.String(clst.namespace)}}})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, spot := range spotsResp.SpotInstanceRequests {
+	for _, spot := range spots {
 		machines = append(machines, awsMachine{
 			spotID: resolveString(spot.SpotInstanceRequestId),
 		})
@@ -311,57 +297,33 @@ func (clst *Cluster) parseDiskSize(inst ec2.Instance) (int, error) {
 		return 0, nil
 	}
 
-	volumeID := inst.BlockDeviceMappings[0].Ebs.VolumeId
-	filters := []*ec2.Filter{
-		{
-			Name: aws.String("volume-id"),
-			Values: []*string{
-				aws.String(*volumeID),
-			},
-		},
-	}
-
-	volumeInfo, err := clst.client.DescribeVolumes(
-		&ec2.DescribeVolumesInput{
-			Filters: filters,
-		})
-	if err != nil {
+	volumeID := *inst.BlockDeviceMappings[0].Ebs.VolumeId
+	volumes, err := clst.client.DescribeVolumes(volumeID)
+	if err != nil || len(volumes) == 0 {
 		return 0, err
 	}
-
-	if len(volumeInfo.Volumes) == 0 {
-		return 0, nil
-	}
-
-	return int(*volumeInfo.Volumes[0].Size), nil
+	return int(*volumes[0].Size), nil
 }
 
 // `listInstances` fetches and parses all machines in the namespace into a list
 // of `awsMachine`s
 func (clst *Cluster) listInstances() (instances []awsMachine, err error) {
-	insts, err := clst.client.DescribeInstances(&ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("instance.group-name"),
-				Values: []*string{aws.String(clst.namespace)},
-			},
-			{
-				Name: aws.String("instance-state-name"),
-				Values: []*string{
-					aws.String(ec2.InstanceStateNameRunning)},
-			},
-		},
-	})
+	insts, err := clst.client.DescribeInstances([]*ec2.Filter{{
+		Name:   aws.String("instance.group-name"),
+		Values: []*string{aws.String(clst.namespace)},
+	}, {
+		Name:   aws.String("instance-state-name"),
+		Values: []*string{aws.String(ec2.InstanceStateNameRunning)}}})
 	if err != nil {
 		return nil, err
 	}
 
-	addrResp, err := clst.client.DescribeAddresses(nil)
+	addrs, err := clst.client.DescribeAddresses()
 	if err != nil {
 		return nil, err
 	}
 	ipMap := map[string]*ec2.Address{}
-	for _, ip := range addrResp.Addresses {
+	for _, ip := range addrs {
 		if ip.InstanceId != nil {
 			ipMap[*ip.InstanceId] = ip
 		}
@@ -441,56 +403,48 @@ func (clst *Cluster) List() (machines []machine.Machine, err error) {
 
 // UpdateFloatingIPs updates Elastic IPs <> EC2 instance associations.
 func (clst *Cluster) UpdateFloatingIPs(machines []machine.Machine) error {
-	addressDesc, err := clst.client.DescribeAddresses(nil)
+	addrs, err := clst.client.DescribeAddresses()
 	if err != nil {
 		return err
 	}
 
 	// Map IP Address -> Elastic IP.
-	addresses := map[string]*string{}
+	addresses := map[string]string{}
 	// Map EC2 Instance -> Elastic IP association.
-	associations := map[string]*string{}
-	for _, addr := range addressDesc.Addresses {
-		addresses[*addr.PublicIp] = addr.AllocationId
-		if addr.InstanceId != nil {
-			associations[*addr.InstanceId] = addr.AssociationId
+	associations := map[string]string{}
+	for _, addr := range addrs {
+		if addr.AllocationId != nil {
+			addresses[*addr.PublicIp] = *addr.AllocationId
 		}
-	}
 
-	// Map machine ID to EC2 instance ID.
-	instances := map[string]string{}
-	for _, m := range machines {
-		if !m.Preemptible {
-			instances[m.ID] = m.ID
-		} else {
-			instances[m.ID], err = clst.getInstanceID(m.ID)
-			if err != nil {
-				return err
-			}
+		if addr.InstanceId != nil && addr.AssociationId != nil {
+			associations[*addr.InstanceId] = *addr.AssociationId
 		}
 	}
 
 	for _, machine := range machines {
+		id := machine.ID
+		if machine.Preemptible {
+			id, err = clst.getInstanceID(id)
+			if err != nil {
+				return err
+			}
+		}
+
 		if machine.FloatingIP == "" {
-			associationID := associations[instances[machine.ID]]
-			if associationID == nil {
+			associationID, ok := associations[id]
+			if !ok {
 				continue
 			}
 
-			input := ec2.DisassociateAddressInput{
-				AssociationId: associationID,
-			}
-			_, err = clst.client.DisassociateAddress(&input)
+			err := clst.client.DisassociateAddress(associationID)
 			if err != nil {
 				return err
 			}
 		} else {
 			allocationID := addresses[machine.FloatingIP]
-			input := ec2.AssociateAddressInput{
-				InstanceId:   aws.String(instances[machine.ID]),
-				AllocationId: allocationID,
-			}
-			if _, err := clst.client.AssociateAddress(&input); err != nil {
+			err := clst.client.AssociateAddress(id, allocationID)
+			if err != nil {
 				return err
 			}
 		}
@@ -500,19 +454,16 @@ func (clst *Cluster) UpdateFloatingIPs(machines []machine.Machine) error {
 }
 
 func (clst Cluster) getInstanceID(spotID string) (string, error) {
-	spotQuery := ec2.DescribeSpotInstanceRequestsInput{
-		SpotInstanceRequestIds: aws.StringSlice([]string{spotID}),
-	}
-	spotResp, err := clst.client.DescribeSpotInstanceRequests(&spotQuery)
+	spots, err := clst.client.DescribeSpotInstanceRequests([]string{spotID}, nil)
 	if err != nil {
 		return "", err
 	}
 
-	if len(spotResp.SpotInstanceRequests) == 0 {
+	if len(spots) == 0 {
 		return "", fmt.Errorf("no spot requests with ID %s", spotID)
 	}
 
-	return *spotResp.SpotInstanceRequests[0].InstanceId, nil
+	return *spots[0].InstanceId, nil
 }
 
 /* Wait for the 'ids' to have booted or terminated depending on the value
@@ -560,12 +511,8 @@ func (clst *Cluster) SetACLs(acls []acl.ACL) error {
 
 	if len(rangesToAdd) != 0 {
 		logACLs(true, rangesToAdd)
-		_, err = clst.client.AuthorizeSecurityGroupIngress(
-			&ec2.AuthorizeSecurityGroupIngressInput{
-				GroupName:     aws.String(clst.namespace),
-				IpPermissions: rangesToAdd,
-			},
-		)
+		err = clst.client.AuthorizeSecurityGroup(
+			clst.namespace, "", rangesToAdd)
 		if err != nil {
 			return err
 		}
@@ -573,14 +520,8 @@ func (clst *Cluster) SetACLs(acls []acl.ACL) error {
 
 	if !foundGroup {
 		log.WithField("Group", clst.namespace).Debug("Amazon: Add group")
-		_, err = clst.client.AuthorizeSecurityGroupIngress(
-			&ec2.AuthorizeSecurityGroupIngressInput{
-				GroupName: aws.String(
-					clst.namespace),
-				SourceSecurityGroupName: aws.String(
-					clst.namespace),
-			},
-		)
+		err = clst.client.AuthorizeSecurityGroup(
+			clst.namespace, clst.namespace, nil)
 		if err != nil {
 			return err
 		}
@@ -588,12 +529,7 @@ func (clst *Cluster) SetACLs(acls []acl.ACL) error {
 
 	if len(rulesToRemove) != 0 {
 		logACLs(false, rulesToRemove)
-		_, err = clst.client.RevokeSecurityGroupIngress(
-			&ec2.RevokeSecurityGroupIngressInput{
-				GroupName:     aws.String(clst.namespace),
-				IpPermissions: rulesToRemove,
-			},
-		)
+		err = clst.client.RevokeSecurityGroup(clst.namespace, rulesToRemove)
 		if err != nil {
 			return err
 		}
@@ -605,43 +541,19 @@ func (clst *Cluster) SetACLs(acls []acl.ACL) error {
 func (clst *Cluster) getCreateSecurityGroup() (
 	string, []*ec2.IpPermission, error) {
 
-	resp, err := clst.client.DescribeSecurityGroups(
-		&ec2.DescribeSecurityGroupsInput{
-			Filters: []*ec2.Filter{
-				{
-					Name: aws.String("group-name"),
-					Values: []*string{
-						aws.String(clst.namespace),
-					},
-				},
-			},
-		})
-
+	groups, err := clst.client.DescribeSecurityGroup(clst.namespace)
 	if err != nil {
 		return "", nil, err
-	}
-
-	groups := resp.SecurityGroups
-	if len(groups) > 1 {
+	} else if len(groups) > 1 {
 		err := errors.New("Multiple Security Groups with the same name: " +
 			clst.namespace)
 		return "", nil, err
-	}
-
-	if len(groups) == 1 {
+	} else if len(groups) == 1 {
 		return *groups[0].GroupId, groups[0].IpPermissions, nil
 	}
 
-	csgResp, err := clst.client.CreateSecurityGroup(
-		&ec2.CreateSecurityGroupInput{
-			Description: aws.String("Quilt Group"),
-			GroupName:   aws.String(clst.namespace),
-		})
-	if err != nil {
-		return "", nil, err
-	}
-
-	return *csgResp.GroupId, nil, nil
+	id, err := clst.client.CreateSecurityGroup(clst.namespace, "Quilt Group")
+	return id, nil, err
 }
 
 // syncACLs returns the permissions that need to be removed and added in order
