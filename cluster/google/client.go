@@ -81,17 +81,17 @@ func getProjectID(configStr string) (string, error) {
  * Service: Instances
  */
 
-func (c *clientImpl) GetInstance(zone, id string) (*compute.Instance, error) {
-	return c.gce.Instances.Get(c.projID, zone, id).Do()
+func (ci *clientImpl) GetInstance(zone, id string) (*compute.Instance, error) {
+	return ci.gce.Instances.Get(ci.projID, zone, id).Do()
 }
 
 type apiOptions struct {
 	filter string
 }
 
-func (c *clientImpl) ListInstances(zone string, opts apiOptions) (
+func (ci *clientImpl) ListInstances(zone string, opts apiOptions) (
 	*compute.InstanceList, error) {
-	call := c.gce.Instances.List(c.projID, zone)
+	call := ci.gce.Instances.List(ci.projID, zone)
 	if opts.filter != "" {
 		call = call.Filter(opts.filter)
 	}
@@ -99,25 +99,25 @@ func (c *clientImpl) ListInstances(zone string, opts apiOptions) (
 	return call.Do()
 }
 
-func (c *clientImpl) InsertInstance(zone string, instance *compute.Instance) (
+func (ci *clientImpl) InsertInstance(zone string, instance *compute.Instance) (
 	*compute.Operation, error) {
-	return c.gce.Instances.Insert(c.projID, zone, instance).Do()
+	return ci.gce.Instances.Insert(ci.projID, zone, instance).Do()
 }
 
-func (c *clientImpl) DeleteInstance(zone, instance string) (*compute.Operation,
+func (ci *clientImpl) DeleteInstance(zone, instance string) (*compute.Operation,
 	error) {
-	return c.gce.Instances.Delete(c.projID, zone, instance).Do()
+	return ci.gce.Instances.Delete(ci.projID, zone, instance).Do()
 }
 
-func (c *clientImpl) AddAccessConfig(zone, instance, networkInterface string,
+func (ci *clientImpl) AddAccessConfig(zone, instance, networkInterface string,
 	accessConfig *compute.AccessConfig) (*compute.Operation, error) {
-	return c.gce.Instances.AddAccessConfig(c.projID, zone, instance, networkInterface,
-		accessConfig).Do()
+	return ci.gce.Instances.AddAccessConfig(ci.projID, zone, instance,
+		networkInterface, accessConfig).Do()
 }
 
-func (c *clientImpl) DeleteAccessConfig(zone, instance, accessConfig,
+func (ci *clientImpl) DeleteAccessConfig(zone, instance, accessConfig,
 	networkInterface string) (*compute.Operation, error) {
-	return c.gce.Instances.DeleteAccessConfig(c.projID, zone, instance,
+	return ci.gce.Instances.DeleteAccessConfig(ci.projID, zone, instance,
 		accessConfig, networkInterface).Do()
 }
 
@@ -125,52 +125,52 @@ func (c *clientImpl) DeleteAccessConfig(zone, instance, accessConfig,
  * Service: ZoneOperations
  */
 
-func (c *clientImpl) GetZoneOperation(zone, operation string) (
+func (ci *clientImpl) GetZoneOperation(zone, operation string) (
 	*compute.Operation, error) {
-	return c.gce.ZoneOperations.Get(c.projID, zone, operation).Do()
+	return ci.gce.ZoneOperations.Get(ci.projID, zone, operation).Do()
 }
 
 /**
  * Service: GlobalOperations
  */
 
-func (c *clientImpl) GetGlobalOperation(operation string) (*compute.Operation,
+func (ci *clientImpl) GetGlobalOperation(operation string) (*compute.Operation,
 	error) {
-	return c.gce.GlobalOperations.Get(c.projID, operation).Do()
+	return ci.gce.GlobalOperations.Get(ci.projID, operation).Do()
 }
 
 /**
  * Service: Firewall
  */
 
-func (c *clientImpl) ListFirewalls() (*compute.FirewallList, error) {
-	return c.gce.Firewalls.List(c.projID).Do()
+func (ci *clientImpl) ListFirewalls() (*compute.FirewallList, error) {
+	return ci.gce.Firewalls.List(ci.projID).Do()
 }
 
-func (c *clientImpl) InsertFirewall(firewall *compute.Firewall) (
+func (ci *clientImpl) InsertFirewall(firewall *compute.Firewall) (
 	*compute.Operation, error) {
-	return c.gce.Firewalls.Insert(c.projID, firewall).Do()
+	return ci.gce.Firewalls.Insert(ci.projID, firewall).Do()
 }
 
-func (c *clientImpl) PatchFirewall(name string, firewall *compute.Firewall) (
+func (ci *clientImpl) PatchFirewall(name string, firewall *compute.Firewall) (
 	*compute.Operation, error) {
-	return c.gce.Firewalls.Patch(c.projID, name, firewall).Do()
+	return ci.gce.Firewalls.Patch(ci.projID, name, firewall).Do()
 }
 
-func (c *clientImpl) DeleteFirewall(firewall string) (
+func (ci *clientImpl) DeleteFirewall(firewall string) (
 	*compute.Operation, error) {
-	return c.gce.Firewalls.Delete(c.projID, firewall).Do()
+	return ci.gce.Firewalls.Delete(ci.projID, firewall).Do()
 }
 
 /**
  * Service: Networks
  */
 
-func (c *clientImpl) ListNetworks() (*compute.NetworkList, error) {
-	return c.gce.Networks.List(c.projID).Do()
+func (ci *clientImpl) ListNetworks() (*compute.NetworkList, error) {
+	return ci.gce.Networks.List(ci.projID).Do()
 }
 
-func (c *clientImpl) InsertNetwork(network *compute.Network) (
+func (ci *clientImpl) InsertNetwork(network *compute.Network) (
 	*compute.Operation, error) {
-	return c.gce.Networks.Insert(c.projID, network).Do()
+	return ci.gce.Networks.Insert(ci.projID, network).Do()
 }
