@@ -77,7 +77,6 @@ type RunOptions struct {
 type client interface {
 	StartContainer(id string, hostConfig *dkc.HostConfig) error
 	UploadToContainer(id string, opts dkc.UploadToContainerOptions) error
-	DownloadFromContainer(id string, opts dkc.DownloadFromContainerOptions) error
 	RemoveContainer(opts dkc.RemoveContainerOptions) error
 	BuildImage(opts dkc.BuildImageOptions) error
 	PullImage(opts dkc.PullImageOptions, auth dkc.AuthConfiguration) error

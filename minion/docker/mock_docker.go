@@ -394,9 +394,3 @@ func (dk MockClient) UploadToContainer(id string,
 
 	return nil
 }
-
-// DownloadFromContainer is not implemented.
-func (dk MockClient) DownloadFromContainer(id string,
-	opts dkc.DownloadFromContainerOptions) error {
-	panic("MockClient Not Implemented")
-}
