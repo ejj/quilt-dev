@@ -27,19 +27,22 @@ func TestUpdateNATErrors(t *testing.T) {
 	assert.NotNil(t, updateNAT(ipt, nil, nil, "", ""))
 
 	ipt = &mocks.IPTables{}
-	ipt.On("AppendUnique", mock.Anything, mock.Anything, mock.Anything).Return(anErr)
+	ipt.On("AppendUnique", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(anErr)
 	getDefaultRouteIntf = func() (string, error) {
 		return "eth0", nil
 	}
 	assert.NotNil(t, updateNAT(ipt, nil, nil, "", ""))
 
 	ipt = &mocks.IPTables{}
-	ipt.On("AppendUnique", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	ipt.On("AppendUnique", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(nil)
 	ipt.On("List", mock.Anything, mock.Anything).Return(nil, anErr)
 	assert.NotNil(t, updateNAT(ipt, nil, nil, "", ""))
 
 	ipt = &mocks.IPTables{}
-	ipt.On("AppendUnique", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	ipt.On("AppendUnique", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(nil)
 	ipt.On("List", "nat", "PREROUTING").Return(nil, nil)
 	ipt.On("List", "nat", "POSTROUTING").Return(nil, anErr)
 	assert.NotNil(t, updateNAT(ipt, nil, nil, "", ""))
@@ -199,10 +202,10 @@ func TestSyncChain(t *testing.T) {
 		"-A PREROUTING -i eth0 -j DNAT --to-destination 8.8.8.8:80",
 	}, nil)
 	ipt.On("Delete", "nat", "PREROUTING",
-		[]string{"-i", "eth0", "-j", "DNAT", "--to-destination", "7.7.7.7:80"},
+		"-i", "eth0", "-j", "DNAT", "--to-destination", "7.7.7.7:80",
 	).Return(nil)
 	ipt.On("Append", "nat", "PREROUTING",
-		[]string{"-i", "eth0", "-j", "DNAT", "--to-destination", "9.9.9.9:80"},
+		"-i", "eth0", "-j", "DNAT", "--to-destination", "9.9.9.9:80",
 	).Return(nil)
 	err := syncChain(ipt, "nat", "PREROUTING", []string{
 		"-i eth0 -j DNAT --to-destination 8.8.8.8:80",
