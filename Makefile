@@ -25,13 +25,13 @@ all:
 install:
 	cd -P . && go install .
 
-golang-check:
+gocheck:
 	govendor test +local
 
 javascript-check:
 	npm test
 
-check: format-check golang-check javascript-check
+check: format-check gocheck javascript-check
 
 clean:
 	govendor clean -x +local
