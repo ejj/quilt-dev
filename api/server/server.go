@@ -14,6 +14,7 @@ import (
 	"github.com/quilt/quilt/api"
 	"github.com/quilt/quilt/api/client"
 	"github.com/quilt/quilt/api/pb"
+	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/stitch"
 	"github.com/quilt/quilt/version"
@@ -148,6 +149,11 @@ func queryFromDaemon(table db.TableType, conn db.Conn) (
 	default:
 		return nil, fmt.Errorf("unrecognized table: %s", table)
 	}
+}
+
+func (s server) QueryCounters(ctx context.Context, in *pb.CountersRequest) (
+	*pb.CountersReply, error) {
+	return &pb.CountersReply{Counters: counter.Dump()}, nil
 }
 
 func (s server) Deploy(cts context.Context, deployReq *pb.DeployRequest) (

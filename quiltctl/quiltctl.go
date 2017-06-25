@@ -20,6 +20,7 @@ var commands = map[string]command.SubCommand{
 	"stop":       command.NewStopCommand(),
 	"version":    command.NewVersionCommand(),
 	"debug-logs": command.NewDebugCommand(),
+	"counters":   &command.Counters{},
 }
 
 // Run parses and runs the quiltctl subcommand given the command line arguments.

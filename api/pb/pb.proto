@@ -4,6 +4,7 @@ service API {
     rpc Query(DBQuery) returns(QueryReply) {}
     rpc Deploy(DeployRequest) returns(DeployReply) {}
     rpc Version(VersionRequest) returns(VersionReply) {}
+    rpc QueryCounters(CountersRequest) returns(CountersReply){}
 }
 
 message DBQuery {
@@ -18,11 +19,23 @@ message DeployRequest {
     string Deployment = 1;
 }
 
-message DeployReply {
-}
+message DeployReply {}
 
 message VersionRequest {}
 
 message VersionReply {
     string Version = 1;
+}
+
+message CountersRequest {}
+
+message CountersReply {
+    repeated Counter counters = 1;
+}
+
+message Counter {
+    string Pkg = 1;
+    string Name = 2;
+    uint64 Value = 3;
+    uint64 PrevValue = 4;
 }

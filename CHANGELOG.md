@@ -14,6 +14,7 @@ boot times.
 `myService.allowFrom(publicInternet, aPort)` now works.
 - Only allocate one Google network per namespace, rather than one network for
 each region within a namespace.
+- Implement debugging counters accessible through `quilt counters`.
 
 Release 0.1.0
 -------------

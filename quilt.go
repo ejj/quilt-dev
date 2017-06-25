@@ -19,7 +19,7 @@ import (
 
 var quiltCommands = `quilt [-log-level=<level> | -l=<level>] [-H=<listen_address>]
 [-verbose | -v] [-log-file=<log_output_file>] [daemon | inspect <blueprint> |
-run <blueprint> | minion | stop [<namespace> | -containers] | ps |
+run <blueprint> | minion | stop [<namespace> | -containers] | ps | counters |
 ssh <id> [command] | logs <id> | debug-logs <id...> | version]`
 
 var quiltExplanation = `When provided a blueprint, quilt takes responsibility for

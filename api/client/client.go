@@ -48,6 +48,9 @@ type Client interface {
 	// QueryClusters retrieves cluster information tracked by the Quilt daemon.
 	QueryClusters() ([]db.Cluster, error)
 
+	// QueryCounters retrieves the debugging counters tracked with the Quilt daemon.
+	QueryCounters() ([]pb.Counter, error)
+
 	// Deploy makes a request to the Quilt daemon to deploy the given deployment.
 	Deploy(deployment string) error
 
@@ -205,6 +208,22 @@ func (c clientImpl) QueryClusters() ([]db.Cluster, error) {
 	}
 
 	return rows.([]db.Cluster), nil
+}
+
+// QueryCounters retrieves the debugging counters tracked with the Quilt daemon.
+func (c clientImpl) QueryCounters() ([]pb.Counter, error) {
+	ctx, _ := context.WithTimeout(context.Background(), requestTimeout)
+	reply, err := c.pbClient.QueryCounters(ctx, &pb.CountersRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	var counters []pb.Counter
+	for _, c := range reply.Counters {
+		counters = append(counters, *c)
+	}
+
+	return counters, nil
 }
 
 // Deploy makes a request to the Quilt daemon to deploy the given deployment.
