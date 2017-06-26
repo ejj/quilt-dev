@@ -10,6 +10,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	clientMock "github.com/quilt/quilt/api/client/mocks"
 	"github.com/quilt/quilt/db"
@@ -196,13 +197,11 @@ func TestPromptsUser(t *testing.T) {
 			return confirmResp, nil
 		}
 
-		c := &clientMock.Client{
-			ClusterReturn: []db.Cluster{
-				{
-					Blueprint: `{"old":"blueprint"}`,
-				},
-			},
-		}
+		c := new(clientMock.Client)
+		c.On("QueryClusters").Return([]db.Cluster{{
+			Blueprint: `{"old":"blueprint"}`,
+		}}, nil)
+		c.On("Deploy", "{}").Return(nil)
 
 		util.WriteFile("test.js", []byte(""), 0644)
 		runCmd := &Run{
@@ -210,7 +209,12 @@ func TestPromptsUser(t *testing.T) {
 			stitch:           "test.js",
 		}
 		runCmd.Run()
-		assert.Equal(t, confirmResp, c.DeployArg != "")
+
+		if confirmResp {
+			c.AssertCalled(t, "Deploy", mock.Anything)
+		} else {
+			c.AssertNotCalled(t, "Deploy", mock.Anything)
+		}
 	}
 }
 

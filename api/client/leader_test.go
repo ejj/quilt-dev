@@ -11,34 +11,26 @@ import (
 )
 
 func TestLeader(t *testing.T) {
-	passedClient := &mocks.Client{}
+	leaderClient := new(mocks.Client)
 	newClient = func(host string) (Client, error) {
+		mc := new(mocks.Client)
+		mc.On("Close").Return(nil)
+		on := mc.On("QueryEtcd")
 		switch host {
-		// One machine doesn't know the LeaderIP
 		case api.RemoteAddress("8.8.8.8"):
-			return &mocks.Client{
-				EtcdReturn: []db.Etcd{
-					{
-						LeaderIP: "",
-					},
-				},
-			}, nil
-		// The other machine knows the LeaderIP
+			// One machine doesn't know the LeaderIP
+			on.Return([]db.Etcd{{LeaderIP: ""}}, nil)
 		case api.RemoteAddress("9.9.9.9"):
-			return &mocks.Client{
-				EtcdReturn: []db.Etcd{
-					{
-						LeaderIP: "leader-priv",
-					},
-				},
-			}, nil
+			// The other machine knows the LeaderIP
+			on.Return([]db.Etcd{{LeaderIP: "leader-priv"}}, nil)
 		case api.RemoteAddress("leader"):
-			return passedClient, nil
+			return leaderClient, nil
 		default:
 			t.Fatalf("Unexpected call to getClient with host %s",
 				host)
 		}
-		panic("unreached")
+
+		return mc, nil
 	}
 
 	res, err := Leader([]db.Machine{
@@ -53,20 +45,19 @@ func TestLeader(t *testing.T) {
 			PrivateIP: "leader-priv",
 		},
 	})
+
 	assert.Nil(t, err)
-	assert.Equal(t, passedClient, res)
+	assert.Equal(t, leaderClient, res)
 }
 
 func TestNoLeader(t *testing.T) {
 	newClient = func(host string) (Client, error) {
+		mc := new(mocks.Client)
+		mc.On("Close").Return(nil)
+
 		// No client knows the leader IP.
-		return &mocks.Client{
-			EtcdReturn: []db.Etcd{
-				{
-					LeaderIP: "",
-				},
-			},
-		}, nil
+		mc.On("QueryEtcd").Return(nil, nil)
+		return mc, nil
 	}
 
 	_, err := Leader([]db.Machine{

@@ -23,9 +23,10 @@ func TestVersionFlags(t *testing.T) {
 func TestGetDaemonVersion(t *testing.T) {
 	t.Parallel()
 
-	mockLocalClient := &mocks.Client{
-		VersionReturn: "mockVersion",
-	}
+	mockLocalClient := &mocks.Client{}
+	mockLocalClient.On("Version").Once().Return("mockVersion", nil)
+	mockLocalClient.On("Close").Return(nil)
+
 	vCmd := Version{
 		connectionHelper: connectionHelper{client: mockLocalClient},
 	}
@@ -33,7 +34,7 @@ func TestGetDaemonVersion(t *testing.T) {
 	res := vCmd.Run()
 	assert.Zero(t, res)
 
-	mockLocalClient.VersionErr = assert.AnError
+	mockLocalClient.On("Version").Return("", assert.AnError)
 	res = vCmd.Run()
 	assert.NotZero(t, res)
 }

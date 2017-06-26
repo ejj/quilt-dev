@@ -444,10 +444,10 @@ func TestDebug(t *testing.T) {
 				mock.Anything).Return([]byte(""), nil)
 		}
 
-		mockLocalClient := &mocks.Client{
-			MachineReturn:   test.machines,
-			ContainerReturn: test.containers,
-		}
+		mockLocalClient := new(mocks.Client)
+		mockLocalClient.On("QueryMachines").Return(test.machines, nil)
+		mockLocalClient.On("QueryContainers").Return(test.containers, nil)
+		mockLocalClient.On("Close").Return(nil)
 		testCmd.connectionHelper = connectionHelper{
 			client: mockLocalClient,
 		}

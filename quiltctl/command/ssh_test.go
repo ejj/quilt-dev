@@ -138,10 +138,10 @@ func TestGetMachine(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		mockClient := mocks.Client{
-			MachineReturn: test.machines,
-		}
-		m, err := getMachine(&mockClient, test.query)
+		mockClient := new(mocks.Client)
+		mockClient.On("QueryMachines").Return(test.machines, nil)
+		mockClient.On("Close").Return(nil)
+		m, err := getMachine(mockClient, test.query)
 
 		if test.expErr != "" {
 			assert.EqualError(t, err, test.expErr)
@@ -250,10 +250,11 @@ func TestSSH(t *testing.T) {
 				Return(nil)
 		}
 
-		mockClient := &mocks.Client{
-			MachineReturn:   test.machines,
-			ContainerReturn: test.containers,
-		}
+		mockClient := new(mocks.Client)
+		mockClient.On("QueryMachines").Return(test.machines, nil)
+		mockClient.On("QueryContainers").Return(test.containers, nil)
+		mockClient.On("Close").Return(nil)
+
 		testCmd.connectionHelper = connectionHelper{client: mockClient}
 
 		assert.Equal(t, 0, testCmd.Run())
@@ -262,10 +263,11 @@ func TestSSH(t *testing.T) {
 }
 
 func TestAmbiguousID(t *testing.T) {
-	mockClient := &mocks.Client{
-		MachineReturn:   []db.Machine{{StitchID: "foo"}},
-		ContainerReturn: []db.Container{{StitchID: "foo"}},
-	}
+	mockClient := new(mocks.Client)
+	mockClient.On("QueryMachines").Return([]db.Machine{{StitchID: "foo"}}, nil)
+	mockClient.On("QueryContainers").Return([]db.Container{{StitchID: "foo"}}, nil)
+	mockClient.On("Close").Return(nil)
+
 	testCmd := SSH{
 		connectionHelper: connectionHelper{client: mockClient},
 		target:           "foo",
@@ -274,10 +276,11 @@ func TestAmbiguousID(t *testing.T) {
 }
 
 func TestNoMatch(t *testing.T) {
-	mockClient := &mocks.Client{
-		MachineReturn:   []db.Machine{{StitchID: "foo"}},
-		ContainerReturn: []db.Container{{StitchID: "foo"}},
-	}
+	mockClient := new(mocks.Client)
+	mockClient.On("QueryMachines").Return([]db.Machine{{StitchID: "foo"}}, nil)
+	mockClient.On("QueryContainers").Return([]db.Container{{StitchID: "foo"}}, nil)
+	mockClient.On("Close").Return(nil)
+
 	testCmd := SSH{
 		connectionHelper: connectionHelper{client: mockClient},
 		target:           "bar",
@@ -294,11 +297,13 @@ func TestSSHExitError(t *testing.T) {
 	mockSSHClient.On("Close").Return(nil)
 	mockSSHClient.On("Run", mock.Anything, mock.Anything).Return(mockExitError(10))
 
-	mockLocalClient := &mocks.Client{
-		MachineReturn: []db.Machine{{StitchID: "tgt"}},
-	}
+	mockClient := new(mocks.Client)
+	mockClient.On("QueryMachines").Return([]db.Machine{{StitchID: "tgt"}}, nil)
+	mockClient.On("QueryContainers").Return(nil, nil)
+	mockClient.On("Close").Return(nil)
+
 	testCmd := SSH{
-		connectionHelper: connectionHelper{client: mockLocalClient},
+		connectionHelper: connectionHelper{client: mockClient},
 		sshGetter:        mockSSHGetter,
 		target:           "tgt",
 		args:             []string{"unused"},
@@ -314,7 +319,7 @@ func TestSSHExitError(t *testing.T) {
 	mockSSHClient.On("Run", mock.Anything, mock.Anything).Return(errors.New("error"))
 
 	testCmd = SSH{
-		connectionHelper: connectionHelper{client: mockLocalClient},
+		connectionHelper: connectionHelper{client: mockClient},
 		sshGetter:        mockSSHGetter,
 		target:           "tgt",
 		args:             []string{"unused"},
@@ -333,9 +338,11 @@ func (err mockExitError) ExitStatus() int {
 }
 
 func TestSSHScheduledContainer(t *testing.T) {
-	mockClient := &mocks.Client{
-		ContainerReturn: []db.Container{{StitchID: "foo"}},
-	}
+	mockClient := &mocks.Client{}
+	mockClient.On("QueryContainers").Return([]db.Container{{StitchID: "foo"}}, nil)
+	mockClient.On("QueryMachines").Return(nil, nil)
+	mockClient.On("Close").Return(nil)
+
 	testCmd := SSH{
 		connectionHelper: connectionHelper{client: mockClient},
 		target:           "foo",

@@ -91,35 +91,31 @@ func TestQueryContainersDaemon(t *testing.T) {
 	newClient = func(host string) (client.Client, error) {
 		switch host {
 		case api.RemoteAddress("9.9.9.9"):
-			return &mocks.Client{
-				ContainerReturn: []db.Container{
-					{
-						StitchID: "onWorker",
-						Image:    "shouldIgnore",
-						DockerID: "dockerID",
-					},
-				},
-			}, nil
+			mc := new(mocks.Client)
+			mc.On("QueryContainers").Return([]db.Container{{
+				StitchID: "onWorker",
+				Image:    "shouldIgnore",
+				DockerID: "dockerID",
+			}}, nil)
+			mc.On("Close").Return(nil)
+			return mc, nil
 		default:
-			t.Fatalf("Unexpected call to getClient with host %s",
-				host)
+			t.Fatalf("Unexpected call to getClient with host %s", host)
 		}
 		panic("unreached")
 	}
 
 	newLeaderClient = func(_ []db.Machine) (client.Client, error) {
-		return &mocks.Client{
-			ContainerReturn: []db.Container{
-				{
-					StitchID: "notScheduled",
-					Image:    "notScheduled",
-				},
-				{
-					StitchID: "onWorker",
-					Image:    "onWorker",
-				},
-			},
-		}, nil
+		mc := new(mocks.Client)
+		mc.On("QueryContainers").Return([]db.Container{{
+			StitchID: "notScheduled",
+			Image:    "notScheduled",
+		}, {
+			StitchID: "onWorker",
+			Image:    "onWorker",
+		}}, nil)
+		mc.On("Close").Return(nil)
+		return mc, nil
 	}
 
 	conn := db.New()

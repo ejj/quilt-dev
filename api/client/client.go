@@ -1,5 +1,7 @@
 package client
 
+//go:generate mockery -name Client
+
 import (
 	"encoding/json"
 	"fmt"

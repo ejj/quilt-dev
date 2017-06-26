@@ -103,19 +103,20 @@ func TestLog(t *testing.T) {
 		},
 	}
 
-	mockLocalClient := &mocks.Client{
-		MachineReturn: []db.Machine{
-			{StitchID: targetMachine, PublicIP: "machine"},
-			{PublicIP: "container", PrivateIP: "containerPriv"},
-		},
-		ContainerReturn: []db.Container{
-			{
-				StitchID: targetContainer,
-				DockerID: "foo",
-				Minion:   "containerPriv",
-			},
-		},
-	}
+	mockLocalClient := new(mocks.Client)
+	mockLocalClient.On("QueryMachines").Return([]db.Machine{{
+		StitchID: targetMachine,
+		PublicIP: "machine",
+	}, {
+		PublicIP:  "container",
+		PrivateIP: "containerPriv",
+	}}, nil)
+	mockLocalClient.On("QueryContainers").Return([]db.Container{{
+		StitchID: targetContainer,
+		DockerID: "foo",
+		Minion:   "containerPriv",
+	}}, nil)
+	mockLocalClient.On("Close").Return(nil)
 
 	for _, test := range tests {
 		testCmd := test.cmd
@@ -139,10 +140,15 @@ func TestLog(t *testing.T) {
 }
 
 func TestLogAmbiguousID(t *testing.T) {
-	mockClient := &mocks.Client{
-		MachineReturn:   []db.Machine{{StitchID: "foo"}},
-		ContainerReturn: []db.Container{{StitchID: "foo"}},
-	}
+	mockClient := new(mocks.Client)
+	mockClient.On("QueryMachines").Return([]db.Machine{{
+		StitchID: "foo",
+	}}, nil)
+	mockClient.On("QueryContainers").Return([]db.Container{{
+		StitchID: "foo",
+	}}, nil)
+	mockClient.On("Close").Return(nil)
+
 	testCmd := Log{
 		connectionHelper: connectionHelper{client: mockClient},
 		target:           "foo",
@@ -151,10 +157,14 @@ func TestLogAmbiguousID(t *testing.T) {
 }
 
 func TestLogNoMatch(t *testing.T) {
-	mockClient := &mocks.Client{
-		MachineReturn:   []db.Machine{{StitchID: "foo"}},
-		ContainerReturn: []db.Container{{StitchID: "foo"}},
-	}
+	mockClient := new(mocks.Client)
+	mockClient.On("QueryMachines").Return([]db.Machine{{
+		StitchID: "foo",
+	}}, nil)
+	mockClient.On("QueryContainers").Return([]db.Container{{
+		StitchID: "foo",
+	}}, nil)
+	mockClient.On("Close").Return(nil)
 
 	testCmd := Log{
 		connectionHelper: connectionHelper{client: mockClient},
@@ -164,9 +174,12 @@ func TestLogNoMatch(t *testing.T) {
 }
 
 func TestLogScheduledContainer(t *testing.T) {
-	mockClient := &mocks.Client{
-		ContainerReturn: []db.Container{{StitchID: "foo"}},
-	}
+	mockClient := new(mocks.Client)
+	mockClient.On("QueryContainers").Return([]db.Container{{
+		StitchID: "foo",
+	}}, nil)
+	mockClient.On("QueryMachines").Return(nil, nil)
+	mockClient.On("Close").Return(nil)
 
 	testCmd := Log{
 		connectionHelper: connectionHelper{client: mockClient},

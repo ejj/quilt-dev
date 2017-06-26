@@ -3,29 +3,28 @@ package command
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	clientMock "github.com/quilt/quilt/api/client/mocks"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/stitch"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestStopNamespaceDefault(t *testing.T) {
 	t.Parallel()
 
-	c := &clientMock.Client{}
-	c.ClusterReturn = []db.Cluster{
-		{
-			Blueprint: `{"namespace": "testSpace"}`,
-		},
-	}
+	c := new(clientMock.Client)
+	c.On("QueryClusters").Once().Return([]db.Cluster{{
+		Blueprint: `{"namespace": "testSpace"}`}}, nil)
+	c.On("Deploy", mock.Anything).Return(nil)
 
 	stopCmd := NewStopCommand()
 	stopCmd.client = c
 	stopCmd.Run()
-	assertDeployed(t, stitch.Stitch{Namespace: "testSpace"}, c.DeployArg)
 
-	c.ClusterReturn = nil
+	c.AssertCalled(t, "Deploy", stitch.Stitch{Namespace: "testSpace"}.String())
+
+	c.On("QueryClusters").Return(nil, nil)
 	assert.Equal(t, 1, stopCmd.Run(),
 		"can't retrieve namespace if no cluster is deployed")
 }
@@ -34,48 +33,41 @@ func TestStopNamespace(t *testing.T) {
 	t.Parallel()
 
 	c := &clientMock.Client{}
+	c.On("QueryClusters").Return(nil, nil)
+	c.On("Deploy", mock.Anything).Return(nil)
 
 	stopCmd := NewStopCommand()
 	stopCmd.client = c
 	stopCmd.namespace = "namespace"
 	stopCmd.Run()
 
-	assertDeployed(t, stitch.Stitch{Namespace: "namespace"}, c.DeployArg)
+	c.AssertCalled(t, "Deploy", stitch.Stitch{Namespace: "namespace"}.String())
 }
 
 func TestStopContainers(t *testing.T) {
 	t.Parallel()
 
 	c := &clientMock.Client{}
-	c.ClusterReturn = []db.Cluster{
-		{
-			Blueprint: `{"namespace": "testSpace", "machines": ` +
-				`[{"provider": "Amazon"}, {"provider": "Google"}]}`,
-		},
-	}
+	c.On("QueryClusters").Return([]db.Cluster{{
+		Blueprint: `{"namespace": "testSpace", "machines": ` +
+			`[{"provider": "Amazon"}, {"provider": "Google"}]}`,
+	}}, nil)
+
+	c.On("Deploy", mock.Anything).Return(nil)
 
 	stopCmd := NewStopCommand()
 	stopCmd.client = c
 	stopCmd.onlyContainers = true
 	stopCmd.Run()
 
-	assertDeployed(t, stitch.Stitch{
+	c.AssertCalled(t, "Deploy", stitch.Stitch{
 		Namespace: "testSpace",
-		Machines: []stitch.Machine{
-			{
-				Provider: "Amazon",
-			},
-			{
-				Provider: "Google",
-			},
-		},
-	}, c.DeployArg)
-}
+		Machines: []stitch.Machine{{
+			Provider: "Amazon",
+		}, {
+			Provider: "Google",
+		}}}.String())
 
-func assertDeployed(t *testing.T, exp stitch.Stitch, deployed string) {
-	actual, err := stitch.FromJSON(deployed)
-	assert.NoError(t, err)
-	assert.Equal(t, exp, actual, "incorrect stop blueprint deployed")
 }
 
 func TestStopFlags(t *testing.T) {
