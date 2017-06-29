@@ -41,7 +41,7 @@ type Debug struct {
 
 	sshGetter ssh.Getter
 
-	*connectionHelper
+	connectionHelper
 }
 
 type logTarget struct {
@@ -99,10 +99,7 @@ var (
 
 // NewDebugCommand creates a new Debug command instance.
 func NewDebugCommand() *Debug {
-	return &Debug{
-		sshGetter:        ssh.New,
-		connectionHelper: &connectionHelper{},
-	}
+	return &Debug{sshGetter: ssh.New}
 }
 
 var debugUsage = `usage: quilt debug-logs [-v] [-tar=<true/false>] [-i <keyfile>]` +

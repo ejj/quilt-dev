@@ -25,15 +25,12 @@ type SSH struct {
 
 	sshGetter ssh.Getter
 
-	*connectionHelper
+	connectionHelper
 }
 
 // NewSSHCommand creates a new SSH command instance.
 func NewSSHCommand() *SSH {
-	return &SSH{
-		sshGetter:        ssh.New,
-		connectionHelper: &connectionHelper{},
-	}
+	return &SSH{sshGetter: ssh.New}
 }
 
 var sshUsage = `usage: quilt ssh <id> [command]

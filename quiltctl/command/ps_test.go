@@ -40,12 +40,12 @@ func TestPsErrors(t *testing.T) {
 
 	// Error querying containers
 	mockClient := &mocks.Client{ContainerErr: mockErr}
-	cmd := &Ps{false, &connectionHelper{client: mockClient}}
+	cmd := &Ps{false, connectionHelper{client: mockClient}}
 	assert.EqualError(t, cmd.run(), "unable to query containers: error")
 
 	// Error querying connections from LeaderClient
 	mockClient = &mocks.Client{ConnectionErr: mockErr}
-	cmd = &Ps{false, &connectionHelper{client: mockClient}}
+	cmd = &Ps{false, connectionHelper{client: mockClient}}
 	assert.EqualError(t, cmd.run(), "unable to query connections: error")
 }
 
@@ -53,7 +53,7 @@ func TestPsSuccess(t *testing.T) {
 	t.Parallel()
 
 	mockClient := new(mocks.Client)
-	cmd := &Ps{false, &connectionHelper{client: mockClient}}
+	cmd := &Ps{false, connectionHelper{client: mockClient}}
 	assert.Equal(t, 0, cmd.Run())
 }
 

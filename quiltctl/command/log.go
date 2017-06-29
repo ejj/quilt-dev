@@ -22,15 +22,12 @@ type Log struct {
 
 	sshGetter ssh.Getter
 
-	*connectionHelper
+	connectionHelper
 }
 
 // NewLogCommand creates a new Log command instance.
 func NewLogCommand() *Log {
-	return &Log{
-		sshGetter:        ssh.New,
-		connectionHelper: &connectionHelper{},
-	}
+	return &Log{sshGetter: ssh.New}
 }
 
 var logsUsage = `usage: quilt logs [-H=<daemon_host>] [-i=<private_key>] <stitch_id>

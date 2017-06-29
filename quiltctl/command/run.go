@@ -24,14 +24,12 @@ type Run struct {
 	stitch string
 	force  bool
 
-	*connectionHelper
+	connectionHelper
 }
 
 // NewRunCommand creates a new Run command instance.
 func NewRunCommand() *Run {
-	return &Run{
-		connectionHelper: &connectionHelper{},
-	}
+	return &Run{}
 }
 
 // InstallFlags sets up parsing for command line flags.

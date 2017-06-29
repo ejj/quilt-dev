@@ -23,14 +23,12 @@ const truncLength = 30
 type Ps struct {
 	noTruncate bool
 
-	*connectionHelper
+	connectionHelper
 }
 
 // NewPsCommand creates a new Ps command instance.
 func NewPsCommand() *Ps {
-	return &Ps{
-		connectionHelper: &connectionHelper{},
-	}
+	return &Ps{}
 }
 
 // InstallFlags sets up parsing for command line flags

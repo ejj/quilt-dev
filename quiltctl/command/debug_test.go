@@ -448,7 +448,7 @@ func TestDebug(t *testing.T) {
 			MachineReturn:   test.machines,
 			ContainerReturn: test.containers,
 		}
-		testCmd.connectionHelper = &connectionHelper{
+		testCmd.connectionHelper = connectionHelper{
 			client: mockLocalClient,
 		}
 

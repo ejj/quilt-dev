@@ -14,14 +14,12 @@ type Stop struct {
 	namespace      string
 	onlyContainers bool
 
-	*connectionHelper
+	connectionHelper
 }
 
 // NewStopCommand creates a new Stop command instance.
 func NewStopCommand() *Stop {
-	return &Stop{
-		connectionHelper: &connectionHelper{},
-	}
+	return &Stop{}
 }
 
 // InstallFlags sets up parsing for command line flags.

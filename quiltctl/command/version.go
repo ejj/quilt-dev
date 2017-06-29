@@ -11,14 +11,12 @@ import (
 
 // Version prints the Quilt version information.
 type Version struct {
-	*connectionHelper
+	connectionHelper
 }
 
 // NewVersionCommand creates a new Version command instance.
 func NewVersionCommand() *Version {
-	return &Version{
-		connectionHelper: &connectionHelper{},
-	}
+	return &Version{}
 }
 
 var versionUsage = `usage: quilt version [-H=<daemon_host>]

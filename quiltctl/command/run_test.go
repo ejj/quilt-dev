@@ -206,7 +206,7 @@ func TestPromptsUser(t *testing.T) {
 
 		util.WriteFile("test.js", []byte(""), 0644)
 		runCmd := &Run{
-			connectionHelper: &connectionHelper{client: c},
+			connectionHelper: connectionHelper{client: c},
 			stitch:           "test.js",
 		}
 		runCmd.Run()

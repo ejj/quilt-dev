@@ -71,10 +71,10 @@ func TestSSHFlags(t *testing.T) {
 func TestSSHPTY(t *testing.T) {
 	isTerminal = func() bool { return false }
 	assert.Equal(t, 1, SSH{
-		connectionHelper: &connectionHelper{client: &mocks.Client{}},
+		connectionHelper: connectionHelper{client: &mocks.Client{}},
 	}.Run())
 	assert.Equal(t, 1, SSH{
-		connectionHelper: &connectionHelper{client: &mocks.Client{}},
+		connectionHelper: connectionHelper{client: &mocks.Client{}},
 		args:             []string{"foo"},
 		allocatePTY:      true,
 	}.Run())
@@ -254,7 +254,7 @@ func TestSSH(t *testing.T) {
 			MachineReturn:   test.machines,
 			ContainerReturn: test.containers,
 		}
-		testCmd.connectionHelper = &connectionHelper{client: mockClient}
+		testCmd.connectionHelper = connectionHelper{client: mockClient}
 
 		assert.Equal(t, 0, testCmd.Run())
 		mockSSHClient.AssertExpectations(t)
@@ -267,7 +267,7 @@ func TestAmbiguousID(t *testing.T) {
 		ContainerReturn: []db.Container{{StitchID: "foo"}},
 	}
 	testCmd := SSH{
-		connectionHelper: &connectionHelper{client: mockClient},
+		connectionHelper: connectionHelper{client: mockClient},
 		target:           "foo",
 	}
 	assert.Equal(t, 1, testCmd.Run())
@@ -279,7 +279,7 @@ func TestNoMatch(t *testing.T) {
 		ContainerReturn: []db.Container{{StitchID: "foo"}},
 	}
 	testCmd := SSH{
-		connectionHelper: &connectionHelper{client: mockClient},
+		connectionHelper: connectionHelper{client: mockClient},
 		target:           "bar",
 	}
 	assert.Equal(t, 1, testCmd.Run())
@@ -298,7 +298,7 @@ func TestSSHExitError(t *testing.T) {
 		MachineReturn: []db.Machine{{StitchID: "tgt"}},
 	}
 	testCmd := SSH{
-		connectionHelper: &connectionHelper{client: mockLocalClient},
+		connectionHelper: connectionHelper{client: mockLocalClient},
 		sshGetter:        mockSSHGetter,
 		target:           "tgt",
 		args:             []string{"unused"},
@@ -314,7 +314,7 @@ func TestSSHExitError(t *testing.T) {
 	mockSSHClient.On("Run", mock.Anything, mock.Anything).Return(errors.New("error"))
 
 	testCmd = SSH{
-		connectionHelper: &connectionHelper{client: mockLocalClient},
+		connectionHelper: connectionHelper{client: mockLocalClient},
 		sshGetter:        mockSSHGetter,
 		target:           "tgt",
 		args:             []string{"unused"},
@@ -337,7 +337,7 @@ func TestSSHScheduledContainer(t *testing.T) {
 		ContainerReturn: []db.Container{{StitchID: "foo"}},
 	}
 	testCmd := SSH{
-		connectionHelper: &connectionHelper{client: mockClient},
+		connectionHelper: connectionHelper{client: mockClient},
 		target:           "foo",
 	}
 	assert.Equal(t, 1, testCmd.Run())

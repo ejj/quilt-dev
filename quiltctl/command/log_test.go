@@ -127,7 +127,7 @@ func TestLog(t *testing.T) {
 			return mockSSHClient, nil
 		}
 		testCmd.privateKey = "key"
-		testCmd.connectionHelper = &connectionHelper{client: mockLocalClient}
+		testCmd.connectionHelper = connectionHelper{client: mockLocalClient}
 
 		mockSSHClient.On("Run", false, test.expSSHCommand).Return(nil)
 		mockSSHClient.On("Close").Return(nil)
@@ -144,7 +144,7 @@ func TestLogAmbiguousID(t *testing.T) {
 		ContainerReturn: []db.Container{{StitchID: "foo"}},
 	}
 	testCmd := Log{
-		connectionHelper: &connectionHelper{client: mockClient},
+		connectionHelper: connectionHelper{client: mockClient},
 		target:           "foo",
 	}
 	assert.Equal(t, 1, testCmd.Run())
@@ -157,7 +157,7 @@ func TestLogNoMatch(t *testing.T) {
 	}
 
 	testCmd := Log{
-		connectionHelper: &connectionHelper{client: mockClient},
+		connectionHelper: connectionHelper{client: mockClient},
 		target:           "bar",
 	}
 	assert.Equal(t, 1, testCmd.Run())
@@ -169,7 +169,7 @@ func TestLogScheduledContainer(t *testing.T) {
 	}
 
 	testCmd := Log{
-		connectionHelper: &connectionHelper{client: mockClient},
+		connectionHelper: connectionHelper{client: mockClient},
 		target:           "foo",
 	}
 	assert.Equal(t, 1, testCmd.Run())

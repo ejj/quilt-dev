@@ -27,7 +27,7 @@ func TestGetDaemonVersion(t *testing.T) {
 		VersionReturn: "mockVersion",
 	}
 	vCmd := Version{
-		connectionHelper: &connectionHelper{client: mockLocalClient},
+		connectionHelper: connectionHelper{client: mockLocalClient},
 	}
 
 	res := vCmd.Run()
