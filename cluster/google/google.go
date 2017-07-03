@@ -11,13 +11,12 @@ import (
 
 	"github.com/quilt/quilt/cluster/acl"
 	"github.com/quilt/quilt/cluster/cloudcfg"
+	"github.com/quilt/quilt/cluster/google/client"
 	"github.com/quilt/quilt/cluster/machine"
 	"github.com/quilt/quilt/join"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 )
 
@@ -43,7 +42,7 @@ const (
 
 // The Cluster objects represents a connection to GCE.
 type Cluster struct {
-	gce client
+	gce client.Client
 
 	imgURL      string // gce url to the VM image
 	networkName string // gce identifier for the network
@@ -59,7 +58,7 @@ type Cluster struct {
 // Clusters are differentiated (namespace) by setting the description and
 // filtering off of that.
 func New(namespace, zone string) (*Cluster, error) {
-	gce, err := newClient()
+	gce, err := client.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize GCE client: %s", err.Error())
 	}
@@ -86,9 +85,8 @@ func New(namespace, zone string) (*Cluster, error) {
 // List the current machines in the cluster.
 func (clst *Cluster) List() ([]machine.Machine, error) {
 	var mList []machine.Machine
-	list, err := clst.gce.ListInstances(clst.zone, apiOptions{
-		filter: fmt.Sprintf("description eq %s", clst.ns),
-	})
+	list, err := clst.gce.ListInstances(clst.zone,
+		fmt.Sprintf("description eq %s", clst.ns))
 	if err != nil {
 		return nil, err
 	}
@@ -585,16 +583,6 @@ func (clst *Cluster) firewallPatch(name string,
 	}
 
 	return clst.gce.PatchFirewall(name, firewall)
-}
-
-func newComputeService(configStr string) (*compute.Service, error) {
-	jwtConfig, err := google.JWTConfigFromJSON(
-		[]byte(configStr), compute.ComputeScope)
-	if err != nil {
-		return nil, err
-	}
-
-	return compute.New(jwtConfig.Client(context.Background()))
 }
 
 // Initializes the network for the cluster

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/quilt/quilt/cluster/acl"
+	"github.com/quilt/quilt/cluster/google/client/mocks"
 	"github.com/quilt/quilt/cluster/machine"
 	"github.com/stretchr/testify/suite"
 
@@ -14,12 +15,12 @@ import (
 type GoogleTestSuite struct {
 	suite.Suite
 
-	gce  *mockClient
+	gce  *mocks.Client
 	clst *Cluster
 }
 
 func (s *GoogleTestSuite) SetupTest() {
-	s.gce = &mockClient{}
+	s.gce = new(mocks.Client)
 	s.clst = &Cluster{
 		gce:  s.gce,
 		ns:   "namespace",
@@ -28,9 +29,8 @@ func (s *GoogleTestSuite) SetupTest() {
 }
 
 func (s *GoogleTestSuite) TestList() {
-	s.gce.On("ListInstances", "zone-1", apiOptions{
-		filter: "description eq namespace",
-	}).Return(&compute.InstanceList{
+	s.gce.On("ListInstances", "zone-1",
+		"description eq namespace").Return(&compute.InstanceList{
 		Items: []*compute.Instance{
 			{
 				MachineType: "machine/split/type-1",

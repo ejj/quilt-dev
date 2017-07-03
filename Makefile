@@ -5,7 +5,7 @@ LINE_LENGTH_EXCLUDE=./api/pb/pb.pb.go \
 		    ./cluster/amazon/client/mocks/% \
 		    ./cluster/cloudcfg/template.go \
 		    ./cluster/digitalocean/client/mocks/% \
-		    ./cluster/google/mock_client_test.go \
+		    ./cluster/google/client/mocks/% \
 		    ./cluster/machine/amazon.go \
 		    ./cluster/machine/google.go \
 		    ./minion/network/link_test.go \
@@ -51,6 +51,7 @@ COV_SKIP= /api/client/mocks \
 	  /cluster/amazon/client/mocks \
 	  /cluster/digitalocean/client/mocks \
 	  /cluster/provider/mocks \
+	  /cluster/google/client/mocks \
 	  /constants \
 	  /minion/network/mocks \
 	  /minion/ovsdb/mocks \

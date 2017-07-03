@@ -1,21 +1,25 @@
-package google
+//go:generate mockery -name=Client
+
+package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/oauth2/google"
 
 	compute "google.golang.org/api/compute/v1"
 
 	"github.com/quilt/quilt/util"
 )
 
-//go:generate mockery -inpkg -testonly -name=client
-type client interface {
+// A Client for Google's API. Used for unit testing.
+type Client interface {
 	GetInstance(zone, id string) (*compute.Instance, error)
-	ListInstances(zone string, opts apiOptions) (*compute.InstanceList,
-		error)
+	ListInstances(zone, filter string) (*compute.InstanceList, error)
 	InsertInstance(zone string, instance *compute.Instance) (
 		*compute.Operation, error)
 	DeleteInstance(zone, operation string) (*compute.Operation, error)
@@ -36,12 +40,13 @@ type client interface {
 		*compute.Operation, error)
 }
 
-type clientImpl struct {
+type client struct {
 	gce    *compute.Service
 	projID string
 }
 
-func newClient() (*clientImpl, error) {
+// New creates a new Google client.
+func New() (Client, error) {
 	configPath := filepath.Join(os.Getenv("HOME"), ".gce", "quilt.json")
 	configStr, err := util.ReadFile(configPath)
 	if err != nil {
@@ -58,7 +63,17 @@ func newClient() (*clientImpl, error) {
 		return nil, fmt.Errorf("failed to get project ID: %s", err)
 	}
 
-	return &clientImpl{gce: service, projID: projID}, nil
+	return &client{gce: service, projID: projID}, nil
+}
+
+func newComputeService(configStr string) (*compute.Service, error) {
+	jwtConfig, err := google.JWTConfigFromJSON(
+		[]byte(configStr), compute.ComputeScope)
+	if err != nil {
+		return nil, err
+	}
+
+	return compute.New(jwtConfig.Client(context.Background()))
 }
 
 const projectIDKey = "project_id"
@@ -77,100 +92,75 @@ func getProjectID(configStr string) (string, error) {
 	return projID, nil
 }
 
-/**
- * Service: Instances
- */
-
-func (ci *clientImpl) GetInstance(zone, id string) (*compute.Instance, error) {
+func (ci *client) GetInstance(zone, id string) (*compute.Instance, error) {
 	return ci.gce.Instances.Get(ci.projID, zone, id).Do()
 }
 
-type apiOptions struct {
-	filter string
-}
-
-func (ci *clientImpl) ListInstances(zone string, opts apiOptions) (
-	*compute.InstanceList, error) {
+func (ci *client) ListInstances(zone, filter string) (*compute.InstanceList, error) {
 	call := ci.gce.Instances.List(ci.projID, zone)
-	if opts.filter != "" {
-		call = call.Filter(opts.filter)
+	if filter != "" {
+		call = call.Filter(filter)
 	}
 
 	return call.Do()
 }
 
-func (ci *clientImpl) InsertInstance(zone string, instance *compute.Instance) (
+func (ci *client) InsertInstance(zone string, instance *compute.Instance) (
 	*compute.Operation, error) {
 	return ci.gce.Instances.Insert(ci.projID, zone, instance).Do()
 }
 
-func (ci *clientImpl) DeleteInstance(zone, instance string) (*compute.Operation,
+func (ci *client) DeleteInstance(zone, instance string) (*compute.Operation,
 	error) {
 	return ci.gce.Instances.Delete(ci.projID, zone, instance).Do()
 }
 
-func (ci *clientImpl) AddAccessConfig(zone, instance, networkInterface string,
+func (ci *client) AddAccessConfig(zone, instance, networkInterface string,
 	accessConfig *compute.AccessConfig) (*compute.Operation, error) {
 	return ci.gce.Instances.AddAccessConfig(ci.projID, zone, instance,
 		networkInterface, accessConfig).Do()
 }
 
-func (ci *clientImpl) DeleteAccessConfig(zone, instance, accessConfig,
+func (ci *client) DeleteAccessConfig(zone, instance, accessConfig,
 	networkInterface string) (*compute.Operation, error) {
 	return ci.gce.Instances.DeleteAccessConfig(ci.projID, zone, instance,
 		accessConfig, networkInterface).Do()
 }
 
-/**
- * Service: ZoneOperations
- */
-
-func (ci *clientImpl) GetZoneOperation(zone, operation string) (
+func (ci *client) GetZoneOperation(zone, operation string) (
 	*compute.Operation, error) {
 	return ci.gce.ZoneOperations.Get(ci.projID, zone, operation).Do()
 }
 
-/**
- * Service: GlobalOperations
- */
-
-func (ci *clientImpl) GetGlobalOperation(operation string) (*compute.Operation,
+func (ci *client) GetGlobalOperation(operation string) (*compute.Operation,
 	error) {
 	return ci.gce.GlobalOperations.Get(ci.projID, operation).Do()
 }
 
-/**
- * Service: Firewall
- */
-
-func (ci *clientImpl) ListFirewalls() (*compute.FirewallList, error) {
+func (ci *client) ListFirewalls() (*compute.FirewallList, error) {
 	return ci.gce.Firewalls.List(ci.projID).Do()
 }
 
-func (ci *clientImpl) InsertFirewall(firewall *compute.Firewall) (
+func (ci *client) InsertFirewall(firewall *compute.Firewall) (
 	*compute.Operation, error) {
 	return ci.gce.Firewalls.Insert(ci.projID, firewall).Do()
 }
 
-func (ci *clientImpl) PatchFirewall(name string, firewall *compute.Firewall) (
+func (ci *client) PatchFirewall(name string, firewall *compute.Firewall) (
 	*compute.Operation, error) {
 	return ci.gce.Firewalls.Patch(ci.projID, name, firewall).Do()
 }
 
-func (ci *clientImpl) DeleteFirewall(firewall string) (
+func (ci *client) DeleteFirewall(firewall string) (
 	*compute.Operation, error) {
 	return ci.gce.Firewalls.Delete(ci.projID, firewall).Do()
 }
 
-/**
- * Service: Networks
- */
-
-func (ci *clientImpl) ListNetworks() (*compute.NetworkList, error) {
+func (ci *client) ListNetworks() (*compute.NetworkList, error) {
 	return ci.gce.Networks.List(ci.projID).Do()
 }
 
-func (ci *clientImpl) InsertNetwork(network *compute.Network) (
+func (ci *client) InsertNetwork(network *compute.Network) (
 	*compute.Operation, error) {
 	return ci.gce.Networks.Insert(ci.projID, network).Do()
 }
