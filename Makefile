@@ -4,7 +4,7 @@ NOVENDOR=$(shell find . -path -prune -o -path ./vendor -prune -o -name '*.go' -p
 LINE_LENGTH_EXCLUDE=./api/pb/pb.pb.go \
 		    ./cluster/amazon/client/mocks/% \
 		    ./cluster/cloudcfg/template.go \
-		    ./cluster/digitalocean/mock_client.go \
+		    ./cluster/digitalocean/client/mocks/% \
 		    ./cluster/google/mock_client_test.go \
 		    ./cluster/machine/amazon.go \
 		    ./cluster/machine/google.go \
@@ -49,6 +49,7 @@ release: linux darwin
 COV_SKIP= /api/client/mocks \
 	  /api/pb \
 	  /cluster/amazon/client/mocks \
+	  /cluster/digitalocean/client/mocks \
 	  /cluster/provider/mocks \
 	  /constants \
 	  /minion/network/mocks \

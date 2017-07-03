@@ -12,6 +12,7 @@ import (
 
 	"github.com/quilt/quilt/cluster/acl"
 	"github.com/quilt/quilt/cluster/cloudcfg"
+	"github.com/quilt/quilt/cluster/digitalocean/client"
 	"github.com/quilt/quilt/cluster/machine"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/util"
@@ -33,7 +34,7 @@ var image = "ubuntu-16-04-x64"
 
 // The Cluster object represents a connection to DigitalOcean.
 type Cluster struct {
-	client    client
+	client    client.Client
 	namespace string
 	region    string
 }
@@ -61,16 +62,11 @@ var newDigitalOcean = func(namespace, region string) (*Cluster, error) {
 
 	tc := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: key})
 	oauthClient := oauth2.NewClient(oauth2.NoContext, tc)
-	api := godo.NewClient(oauthClient)
 
 	clst := &Cluster{
 		namespace: namespace,
 		region:    region,
-		client: doClient{
-			droplets:          api.Droplets,
-			floatingIPs:       api.FloatingIPs,
-			floatingIPActions: api.FloatingIPActions,
-		},
+		client:    client.New(oauthClient),
 	}
 	return clst, nil
 }

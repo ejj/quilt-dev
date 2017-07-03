@@ -1,4 +1,3 @@
-//go:generate mockery -inpkg -name=client
 package digitalocean
 
 import (
@@ -17,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/quilt/quilt/cluster/acl"
+	"github.com/quilt/quilt/cluster/digitalocean/client/mocks"
 	"github.com/quilt/quilt/cluster/machine"
 	"github.com/quilt/quilt/util"
 )
@@ -54,7 +54,7 @@ func init() {
 }
 
 func TestList(t *testing.T) {
-	mc := new(mockClient)
+	mc := new(mocks.Client)
 	// Create a list of Droplets, that are paginated.
 	dropFirst := []godo.Droplet{
 		{
@@ -182,7 +182,7 @@ func TestList(t *testing.T) {
 }
 
 func TestBoot(t *testing.T) {
-	mc := new(mockClient)
+	mc := new(mocks.Client)
 	doClust, err := newDigitalOcean(testNamespace, DefaultRegion)
 	assert.Nil(t, err)
 	doClust.client = mc
@@ -238,7 +238,7 @@ func TestBoot(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	mc := new(mockClient)
+	mc := new(mocks.Client)
 	doClust, err := newDigitalOcean(testNamespace, DefaultRegion)
 	assert.Nil(t, err)
 	doClust.client = mc
@@ -328,7 +328,7 @@ func TestSetACLs(t *testing.T) {
 }
 
 func TestUpdateFloatingIPs(t *testing.T) {
-	mc := new(mockClient)
+	mc := new(mocks.Client)
 	clst := &Cluster{client: mc}
 
 	mc.On("ListFloatingIPs", mock.Anything).Return(nil, nil, errMock).Once()
@@ -440,7 +440,7 @@ func TestUpdateFloatingIPs(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	mc := new(mockClient)
+	mc := new(mocks.Client)
 	clust := &Cluster{
 		namespace: testNamespace,
 		client:    mc,
