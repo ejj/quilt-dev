@@ -9,7 +9,7 @@ LINE_LENGTH_EXCLUDE=./api/pb/pb.pb.go \
 		    ./cluster/machine/amazon.go \
 		    ./cluster/machine/google.go \
 		    ./minion/network/link_test.go \
-		    ./minion/ovsdb/mock_transact.go \
+		    ./minion/ovsdb/mock_transact_test.go \
 		    ./minion/ovsdb/mocks/Client.go \
 		    ./minion/pb/pb.pb.go \
 		    ./quilt-tester/tests/zookeeper/vendor/% \

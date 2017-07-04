@@ -1,4 +1,4 @@
-//go:generate mockery -name=transact -inpkg
+//go:generate mockery -name=transact -inpkg -testonly
 //go:generate mockery -name=Client
 
 package ovsdb
