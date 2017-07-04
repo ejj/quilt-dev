@@ -48,20 +48,20 @@ release: linux darwin
 
 COV_SKIP= /api/client/mocks \
 	  /api/pb \
-	  /cluster/provider/mocks \
 	  /cluster/amazon/client/mocks \
+	  /cluster/provider/mocks \
 	  /constants \
-	  /minion/pprofile \
-	  /minion/ovsdb/mocks \
 	  /minion/network/mocks \
-	  /quiltctl/testutils \
+	  /minion/ovsdb/mocks \
+	  /minion/pb \
+	  /minion/pprofile \
+	  /minion/supervisor/images \
 	  /quilt-tester/% \
+	  /quiltctl/testutils \
 	  /scripts \
-	  /scripts/format \
 	  /scripts/blueprints-tester \
 	  /scripts/blueprints-tester/tests \
-	  /minion/pb \
-	  /minion/supervisor/images \
+	  /scripts/format \
 	  /version
 
 COV_PKG = $(subst github.com/quilt/quilt,,$(PACKAGES))
