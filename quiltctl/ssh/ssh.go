@@ -1,6 +1,6 @@
 package ssh
 
-//go:generate mockery -name=Client -inpkg
+//go:generate mockery -name=Client
 
 // Client is an SSH client used for `quilt` commands.
 type Client interface {

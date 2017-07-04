@@ -15,6 +15,7 @@ import (
 	"github.com/quilt/quilt/api/client/mocks"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/quiltctl/ssh"
+	mockSSH "github.com/quilt/quilt/quiltctl/ssh/mocks"
 	"github.com/quilt/quilt/util"
 )
 
@@ -432,7 +433,7 @@ func TestDebug(t *testing.T) {
 		util.AppFs = afero.NewMemMapFs()
 		testCmd := test.cmd
 
-		mockSSHClient := new(ssh.MockClient)
+		mockSSHClient := new(mockSSH.Client)
 		testCmd.sshGetter = func(host string, keyPath string) (
 			ssh.Client, error) {
 

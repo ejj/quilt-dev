@@ -9,6 +9,7 @@ import (
 	"github.com/quilt/quilt/api/client/mocks"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/quiltctl/ssh"
+	mockSSH "github.com/quilt/quilt/quiltctl/ssh/mocks"
 )
 
 func checkLogParsing(t *testing.T, args []string, exp Log, expErr error) {
@@ -121,7 +122,7 @@ func TestLog(t *testing.T) {
 	for _, test := range tests {
 		testCmd := test.cmd
 
-		mockSSHClient := new(ssh.MockClient)
+		mockSSHClient := new(mockSSH.Client)
 		testCmd.sshGetter = func(host, key string) (ssh.Client, error) {
 			assert.Equal(t, test.expHost, host)
 			assert.Equal(t, "key", key)

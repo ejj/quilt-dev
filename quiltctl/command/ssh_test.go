@@ -10,6 +10,7 @@ import (
 	"github.com/quilt/quilt/api/client/mocks"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/quiltctl/ssh"
+	mockSSH "github.com/quilt/quilt/quiltctl/ssh/mocks"
 )
 
 func checkSSHParsing(t *testing.T, args []string, expArgs SSH, expErrMsg string) {
@@ -235,7 +236,7 @@ func TestSSH(t *testing.T) {
 	for _, test := range tests {
 		testCmd := test.cmd
 
-		mockSSHClient := new(ssh.MockClient)
+		mockSSHClient := new(mockSSH.Client)
 		testCmd.sshGetter = func(host string, keyPath string) (
 			ssh.Client, error) {
 			assert.Equal(t, test.expHost, host)
@@ -290,7 +291,7 @@ func TestNoMatch(t *testing.T) {
 
 func TestSSHExitError(t *testing.T) {
 	// Test error with exit code.
-	mockSSHClient := new(ssh.MockClient)
+	mockSSHClient := new(mockSSH.Client)
 	mockSSHGetter := func(host string, keyPath string) (ssh.Client, error) {
 		return mockSSHClient, nil
 	}
@@ -311,7 +312,7 @@ func TestSSHExitError(t *testing.T) {
 	assert.Equal(t, 10, testCmd.Run())
 
 	// Test error without exit code.
-	mockSSHClient = new(ssh.MockClient)
+	mockSSHClient = new(mockSSH.Client)
 	mockSSHGetter = func(host string, keyPath string) (ssh.Client, error) {
 		return mockSSHClient, nil
 	}

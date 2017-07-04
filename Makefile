@@ -59,6 +59,7 @@ COV_SKIP= /api/client/mocks \
 	  /minion/pprofile \
 	  /minion/supervisor/images \
 	  /quilt-tester/% \
+	  /quiltctl/ssh/mocks \
 	  /quiltctl/testutils \
 	  /scripts \
 	  /scripts/blueprints-tester \
