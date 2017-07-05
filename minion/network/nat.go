@@ -8,12 +8,12 @@ import (
 
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
+	"github.com/quilt/quilt/minion/nl"
 	"github.com/quilt/quilt/stitch"
 	"github.com/quilt/quilt/util"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-iptables/iptables"
-	"github.com/vishvananda/netlink"
 )
 
 // IPTables is an interface to *iptables.IPTables.
@@ -293,12 +293,12 @@ func setDefaultRules(ipt IPTables) error {
 
 // getDefaultRouteIntfImpl gets the interface with the default route.
 func getDefaultRouteIntfImpl() (string, error) {
-	routes, err := routeList(nil, 0)
+	routes, err := nl.N.RouteList()
 	if err != nil {
 		return "", fmt.Errorf("route list: %s", err)
 	}
 
-	var defaultRoute *netlink.Route
+	var defaultRoute *nl.Route
 	for _, r := range routes {
 		if r.Dst == nil {
 			defaultRoute = &r
@@ -310,7 +310,7 @@ func getDefaultRouteIntfImpl() (string, error) {
 		return "", errors.New("missing default route")
 	}
 
-	link, err := linkByIndex(defaultRoute.LinkIndex)
+	link, err := nl.N.LinkByIndex(defaultRoute.LinkIndex)
 	if err != nil {
 		return "", fmt.Errorf("default route missing interface: %s", err)
 	}
@@ -318,6 +318,4 @@ func getDefaultRouteIntfImpl() (string, error) {
 	return link.Attrs().Name, err
 }
 
-var routeList = netlink.RouteList
-var linkByIndex = netlink.LinkByIndex
 var getDefaultRouteIntf = getDefaultRouteIntfImpl

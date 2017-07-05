@@ -2,13 +2,14 @@ package plugin
 
 import (
 	"errors"
-	"fmt"
-	"syscall"
 	"testing"
 
 	"github.com/quilt/quilt/minion/ipdef"
 	"github.com/quilt/quilt/minion/network/openflow"
+	"github.com/quilt/quilt/minion/nl"
+	"github.com/quilt/quilt/minion/nl/nlmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/vishvananda/netlink"
 
 	dnet "github.com/docker/go-plugins-helpers/network"
@@ -20,46 +21,10 @@ var (
 	links = map[string]netlink.Link{}
 )
 
-func mockLinkAdd(l netlink.Link) error {
-	name := l.Attrs().Name
-	if len(name) >= syscall.IFNAMSIZ {
-		panic(fmt.Sprintf("len(\"%s\") >= %d", name, syscall.IFNAMSIZ))
-	}
-
-	if _, ok := links[name]; ok {
-		return fmt.Errorf("veth exists: %s", name)
-	}
-
-	links[name] = l
-	return nil
-}
-
-func mockLinkDel(l netlink.Link) error {
-	name := l.Attrs().Name
-	if _, ok := links[name]; !ok {
-		return fmt.Errorf("del: no such veth: %s", name)
-	}
-	delete(links, name)
-	return nil
-}
-
-func mockLinkByName(name string) (netlink.Link, error) {
-	if _, ok := links[name]; !ok {
-		return nil, fmt.Errorf("byName: no such veth: %s", name)
-	}
-	return links[name], nil
-}
-
-func mockLinkSetUp(link netlink.Link) error {
-	return nil
-}
-
-func setup() {
-	links = map[string]netlink.Link{}
-	linkAdd = mockLinkAdd
-	linkDel = mockLinkDel
-	linkSetUp = mockLinkSetUp
-	linkByName = mockLinkByName
+func setup() *nlmock.I {
+	mock := new(nlmock.I)
+	nl.N = mock
+	return mock
 }
 
 func TestGetCapabilities(t *testing.T) {
@@ -74,7 +39,7 @@ func TestGetCapabilities(t *testing.T) {
 }
 
 func TestCreateEndpoint(t *testing.T) {
-	setup()
+	mk := setup()
 
 	anErr := errors.New("err")
 
@@ -93,26 +58,26 @@ func TestCreateEndpoint(t *testing.T) {
 
 	req.Interface.Address = "10.1.0.1/8"
 
-	linkAdd = func(link netlink.Link) error { return anErr }
+	mk.On("AddVeth", mock.Anything, mock.Anything,
+		mock.Anything).Once().Return(anErr)
 	_, err = d.CreateEndpoint(req)
 	assert.EqualError(t, err, "failed to create veth: err")
 
-	setup()
-	linkByName = func(eid string) (netlink.Link, error) { return nil, anErr }
+	mk.On("AddVeth", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mk.On("LinkByName", mock.Anything).Once().Return(nil, anErr)
 	_, err = d.CreateEndpoint(req)
 	assert.EqualError(t, err, "failed to find link 000000000000000: err")
 
-	setup()
-	linkSetUp = func(link netlink.Link) error { return anErr }
+	link := &netlink.GenericLink{}
+	mk.On("LinkByName", mock.Anything).Return(link, nil)
+	mk.On("LinkSetUp", link).Once().Return(anErr)
 	_, err = d.CreateEndpoint(req)
 	assert.EqualError(t, err, "failed to bring up link 000000000000000: err")
 
-	setup()
+	mk.On("LinkSetUp", link).Return(nil)
 	req.Interface.MacAddress = ""
 	_, err = d.CreateEndpoint(req)
 	assert.EqualError(t, err, "ovs-vsctl: err")
-
-	setup()
 
 	var args [][]string
 	vsctl = func(a [][]string) error {
@@ -143,26 +108,27 @@ func TestCreateEndpoint(t *testing.T) {
 	expResp.MacAddress = ipdef.IPStrToMac("10.1.0.2")
 	resp, err = d.CreateEndpoint(req)
 	assert.NoError(t, err)
-	assert.Equal(t, expResp, *resp.Interface)
 }
 
 func TestDeleteEndpoint(t *testing.T) {
 	var args [][]string
 
-	setup()
+	mk := setup()
 
 	vsctl = func(a [][]string) error {
 		args = a
 		return nil
 	}
 
-	links["foo"] = &netlink.Dummy{LinkAttrs: netlink.LinkAttrs{Name: "foo"}}
+	link := &netlink.GenericLink{}
+	mk.On("LinkByName", "foo").Once().Return(link, nil)
+	mk.On("LinkDel", link).Once().Return(nil)
 
 	req := &dnet.DeleteEndpointRequest{EndpointID: "foo"}
-
 	d := driver{}
 	err := d.DeleteEndpoint(req)
 	assert.NoError(t, err)
+	mk.AssertCalled(t, "LinkDel", link)
 
 	expOvsArgs := [][]string{
 		{"del-port", "quilt-int", "foo"},
@@ -170,12 +136,15 @@ func TestDeleteEndpoint(t *testing.T) {
 		{"del-port", "br-int", "br_foo"}}
 	assert.Equal(t, expOvsArgs, args)
 
+	mk.On("LinkByName", "foo").Once().Return(nil, errors.New("err"))
 	err = d.DeleteEndpoint(req)
-	assert.EqualError(t, err, "failed to find link foo: byName: no such veth: foo")
+	assert.EqualError(t, err, "failed to find link foo: err")
 
+	mk.On("LinkByName", "foo").Return(link, nil)
+	mk.On("LinkDel", link).Once().Return(errors.New("err"))
 	links["foo"] = &netlink.Dummy{}
 	err = d.DeleteEndpoint(req)
-	assert.EqualError(t, err, "failed to delete link foo: del: no such veth: ")
+	assert.EqualError(t, err, "failed to delete link foo: err")
 
 	vsctl = func(a [][]string) error { return errors.New("err") }
 	err = d.DeleteEndpoint(req)
@@ -183,13 +152,15 @@ func TestDeleteEndpoint(t *testing.T) {
 }
 
 func TestEndpointInfo(t *testing.T) {
-	setup()
+	mk := setup()
+
+	mk.On("LinkByName", "foo").Once().Return(nil, errors.New("err"))
 
 	d := driver{}
 	_, err := d.EndpointInfo(&dnet.InfoRequest{EndpointID: "foo"})
-	assert.EqualError(t, err, "byName: no such veth: foo")
+	assert.EqualError(t, err, "err")
 
-	links["foo"] = &netlink.Dummy{LinkAttrs: netlink.LinkAttrs{Name: "foo"}}
+	mk.On("LinkByName", "foo").Once().Return(nil, nil)
 	resp, err := d.EndpointInfo(&dnet.InfoRequest{EndpointID: "foo"})
 	assert.NoError(t, err)
 	assert.Equal(t, &dnet.InfoResponse{}, resp)
@@ -210,8 +181,6 @@ func TestJoin(t *testing.T) {
 }
 
 func TestLeave(t *testing.T) {
-	setup()
-
 	d := driver{}
 	_, err := d.Join(&dnet.JoinRequest{EndpointID: zero, SandboxKey: "/test/docker0"})
 	assert.NoError(t, err)

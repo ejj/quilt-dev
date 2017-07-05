@@ -10,8 +10,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/ipdef"
+	"github.com/quilt/quilt/minion/nl"
+	"github.com/quilt/quilt/minion/nl/nlmock"
 	"github.com/quilt/quilt/minion/supervisor/images"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/vishvananda/netlink"
 )
 
@@ -99,51 +102,42 @@ func TestSetupWorker(t *testing.T) {
 }
 
 func TestCfgGateway(t *testing.T) {
-	linkByName = func(name string) (netlink.Link, error) {
-		if name == "quilt-int" {
-			return &netlink.Device{}, nil
-		}
-		return nil, errors.New("linkByName")
-	}
+	mk := new(nlmock.I)
+	nl.N = mk
 
-	linkSetUp = func(link netlink.Link) error {
-		return errors.New("linkSetUp")
-	}
-
-	addrAdd = func(link netlink.Link, addr *netlink.Addr) error {
-		return errors.New("addrAdd")
-	}
-
+	mk.On("LinkByName", "bogus").Return(nil, errors.New("linkByName"))
 	ip := net.IPNet{IP: ipdef.GatewayIP, Mask: ipdef.QuiltSubnet.Mask}
 
 	err := cfgGatewayImpl("bogus", ip)
 	assert.EqualError(t, err, "no such interface: bogus (linkByName)")
 
+	mk.On("LinkByName", "quilt-int").Return(&netlink.Device{}, nil)
+	mk.On("LinkSetUp", mock.Anything).Return(errors.New("linkSetUp"))
 	err = cfgGatewayImpl("quilt-int", ip)
 	assert.EqualError(t, err, "failed to bring up link: quilt-int (linkSetUp)")
 
-	var up bool
-	linkSetUp = func(link netlink.Link) error {
-		up = true
-		return nil
-	}
+	mk = new(nlmock.I)
+	nl.N = mk
 
-	up = false
+	mk.On("LinkByName", "quilt-int").Return(&netlink.Device{}, nil)
+	mk.On("LinkSetUp", mock.Anything).Return(nil)
+	mk.On("AddrAdd", mock.Anything, mock.Anything).Return(errors.New("addrAdd"))
+
 	err = cfgGatewayImpl("quilt-int", ip)
 	assert.EqualError(t, err, "failed to set address: quilt-int (addrAdd)")
-	assert.True(t, up)
+	mk.AssertCalled(t, "LinkSetUp", mock.Anything)
 
-	var setAddr net.IPNet
-	addrAdd = func(link netlink.Link, addr *netlink.Addr) error {
-		setAddr = *addr.IPNet
-		return nil
-	}
+	mk = new(nlmock.I)
+	nl.N = mk
 
-	up = false
+	mk.On("LinkByName", "quilt-int").Return(&netlink.Device{}, nil)
+	mk.On("LinkSetUp", mock.Anything).Return(nil)
+	mk.On("AddrAdd", mock.Anything, ip).Return(nil)
+
 	err = cfgGatewayImpl("quilt-int", ip)
 	assert.NoError(t, err)
-	assert.True(t, up)
-	assert.Equal(t, setAddr, ip)
+	mk.AssertCalled(t, "LinkSetUp", mock.Anything)
+	mk.AssertCalled(t, "AddrAdd", mock.Anything, ip)
 }
 
 func setupArgs() [][]string {

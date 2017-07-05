@@ -9,9 +9,9 @@ import (
 
 	"github.com/quilt/quilt/minion/ipdef"
 	"github.com/quilt/quilt/minion/network/openflow"
+	"github.com/quilt/quilt/minion/nl"
 
 	dnet "github.com/docker/go-plugins-helpers/network"
-	"github.com/vishvananda/netlink"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -79,10 +79,7 @@ func (d driver) CreateEndpoint(req *dnet.CreateEndpointRequest) (
 
 	outer := ipdef.IFName(req.EndpointID)
 	inner := ipdef.IFName("tmp_" + req.EndpointID)
-	err = linkAdd(&netlink.Veth{
-		LinkAttrs: netlink.LinkAttrs{Name: outer, MTU: mtu},
-		PeerName:  inner})
-	if err != nil {
+	if err := nl.N.AddVeth(outer, inner, mtu); err != nil {
 		return nil, fmt.Errorf("failed to create veth: %s", err)
 	}
 
@@ -91,7 +88,7 @@ func (d driver) CreateEndpoint(req *dnet.CreateEndpointRequest) (
 		return nil, fmt.Errorf("failed to find link %s: %s", outer, err)
 	}
 
-	if err := linkSetUp(outerLink); err != nil {
+	if err := nl.N.LinkSetUp(outerLink); err != nil {
 		return nil, fmt.Errorf("failed to bring up link %s: %s", outer, err)
 	}
 
@@ -148,7 +145,7 @@ func (d driver) DeleteEndpoint(req *dnet.DeleteEndpointRequest) error {
 		return fmt.Errorf("failed to find link %s: %s", req.EndpointID, err)
 	}
 
-	if err := linkDel(outer); err != nil {
+	if err := nl.N.LinkDel(outer); err != nil {
 		return fmt.Errorf("failed to delete link %s: %s", req.EndpointID, err)
 	}
 
@@ -164,12 +161,6 @@ func (d driver) Join(req *dnet.JoinRequest) (*dnet.JoinResponse, error) {
 	return resp, nil
 }
 
-func getOuterLink(eid string) (netlink.Link, error) {
-	return linkByName(ipdef.IFName(eid))
+func getOuterLink(eid string) (nl.Link, error) {
+	return nl.N.LinkByName(ipdef.IFName(eid))
 }
-
-// Mock variables for unit testing
-var linkAdd = netlink.LinkAdd
-var linkDel = netlink.LinkDel
-var linkSetUp = netlink.LinkSetUp
-var linkByName = netlink.LinkByName

@@ -8,7 +8,6 @@ import (
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/docker"
 	"github.com/quilt/quilt/minion/supervisor/images"
-	"github.com/vishvananda/netlink"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -116,7 +115,3 @@ func nodeName(IP string) string {
 var execRun = func(name string, arg ...string) error {
 	return exec.Command(name, arg...).Run()
 }
-
-var linkByName = netlink.LinkByName
-var linkSetUp = netlink.LinkSetUp
-var addrAdd = netlink.AddrAdd

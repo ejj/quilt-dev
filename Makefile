@@ -50,10 +50,12 @@ COV_SKIP= /api/client/mocks \
 	  /api/pb \
 	  /cluster/amazon/client/mocks \
 	  /cluster/digitalocean/client/mocks \
-	  /cluster/provider/mocks \
 	  /cluster/google/client/mocks \
+	  /cluster/provider/mocks \
 	  /constants \
 	  /minion/network/mocks \
+	  /minion/nl \
+	  /minion/nl/nlmock \
 	  /minion/ovsdb/mocks \
 	  /minion/pb \
 	  /minion/pprofile \

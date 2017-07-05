@@ -7,9 +7,9 @@ import (
 
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/ipdef"
+	"github.com/quilt/quilt/minion/nl"
 	"github.com/quilt/quilt/minion/supervisor/images"
 	"github.com/quilt/quilt/util"
-	"github.com/vishvananda/netlink"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -105,16 +105,16 @@ func setupBridge() error {
 }
 
 func cfgGatewayImpl(name string, ip net.IPNet) error {
-	link, err := linkByName(name)
+	link, err := nl.N.LinkByName(name)
 	if err != nil {
 		return fmt.Errorf("no such interface: %s (%s)", name, err)
 	}
 
-	if err := linkSetUp(link); err != nil {
+	if err := nl.N.LinkSetUp(link); err != nil {
 		return fmt.Errorf("failed to bring up link: %s (%s)", name, err)
 	}
 
-	if err := addrAdd(link, &netlink.Addr{IPNet: &ip}); err != nil {
+	if err := nl.N.AddrAdd(link, ip); err != nil {
 		return fmt.Errorf("failed to set address: %s (%s)", name, err)
 	}
 

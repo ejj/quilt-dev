@@ -14,6 +14,8 @@ import (
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/ipdef"
 	"github.com/quilt/quilt/minion/network/mocks"
+	"github.com/quilt/quilt/minion/nl"
+	"github.com/quilt/quilt/minion/nl/nlmock"
 	"github.com/quilt/quilt/stitch"
 )
 
@@ -268,41 +270,35 @@ func TestRuleKey(t *testing.T) {
 }
 
 func TestGetDefaultRouteIntf(t *testing.T) {
-	routeList = func(link netlink.Link, family int) ([]netlink.Route, error) {
-		return nil, errors.New("not implemented")
-	}
-	linkByIndex = func(index int) (netlink.Link, error) {
-		if index == 5 {
-			link := netlink.GenericLink{}
-			link.LinkAttrs.Name = "link name"
-			return &link, nil
-		}
-		return nil, errors.New("unknown")
-	}
+	mock := new(nlmock.I)
+	nl.N = mock
+	mock.On("RouteList").Once().Return(nil, errors.New("not implemented"))
+
+	link := netlink.GenericLink{}
+	link.LinkAttrs.Name = "link name"
+	mock.On("LinkByIndex", 5).Return(&link, nil)
+	mock.On("LinkByIndex", 2).Return(nil, errors.New("unknown"))
 
 	res, err := getDefaultRouteIntfImpl()
 	assert.Empty(t, res)
 	assert.EqualError(t, err, "route list: not implemented")
 
-	var routes []netlink.Route
-	routeList = func(link netlink.Link, family int) ([]netlink.Route, error) {
-		return routes, nil
-	}
+	mock.On("RouteList").Once().Return(nil, nil)
 	res, err = getDefaultRouteIntfImpl()
 	assert.Empty(t, res)
 	assert.EqualError(t, err, "missing default route")
 
-	routes = []netlink.Route{{Dst: &ipdef.QuiltSubnet}}
+	mock.On("RouteList").Once().Return([]nl.Route{{Dst: &ipdef.QuiltSubnet}}, nil)
 	res, err = getDefaultRouteIntfImpl()
 	assert.Empty(t, res)
 	assert.EqualError(t, err, "missing default route")
 
-	routes = []netlink.Route{{LinkIndex: 2}}
+	mock.On("RouteList").Once().Return([]nl.Route{{LinkIndex: 2}}, nil)
 	res, err = getDefaultRouteIntfImpl()
 	assert.Empty(t, res)
 	assert.EqualError(t, err, "default route missing interface: unknown")
 
-	routes = []netlink.Route{{LinkIndex: 5}}
+	mock.On("RouteList").Once().Return([]nl.Route{{LinkIndex: 5}}, nil)
 	res, err = getDefaultRouteIntfImpl()
 	assert.Equal(t, "link name", res)
 	assert.NoError(t, err)
