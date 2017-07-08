@@ -22,4 +22,5 @@ parsers:
   javascript:
     enable_partials: false
 ignore:
-    - "**/mock*"
+    - "**/*mock*"
+    - "/quilt-tester"
