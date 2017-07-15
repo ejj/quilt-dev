@@ -73,21 +73,16 @@ func TestAllFlows(t *testing.T) {
 		{patch: 4, veth: 5, mac: "66:66:66:66:66:66"},
 		{patch: 9, veth: 8, mac: "99:99:99:99:99:99"}})
 	exp := append(staticFlows,
-		"table=0,priority=1000,in_port=5,dl_src=66:66:66:66:66:66,"+
-			"actions=load:0x1->NXM_NX_REG0[],load:0x5->NXM_NX_REG1[],"+
-			"load:0x4->NXM_NX_REG2[],resubmit(,1)",
-		"table=0,priority=1000,in_port=4,"+
-			"actions=load:0x2->NXM_NX_REG0[],load:0x5->NXM_NX_REG1[],"+
-			"load:0x4->NXM_NX_REG2[],resubmit(,1)",
-		"table=2,priority=1000,dl_dst=66:66:66:66:66:66,actions=output:5",
-		"table=0,priority=1000,in_port=8,dl_src=99:99:99:99:99:99,"+
-			"actions=load:0x1->NXM_NX_REG0[],load:0x8->NXM_NX_REG1[],"+
-			"load:0x9->NXM_NX_REG2[],resubmit(,1)",
-		"table=0,priority=1000,in_port=9,"+
-			"actions=load:0x2->NXM_NX_REG0[],load:0x8->NXM_NX_REG1[],"+
-			"load:0x9->NXM_NX_REG2[],resubmit(,1)",
-		"table=2,priority=1000,dl_dst=99:99:99:99:99:99,actions=output:8",
-		"table=1,priority=850,dl_dst=ff:ff:ff:ff:ff:ff,actions=output:5,output:8")
+		"table=0,in_port=5,dl_src=66:66:66:66:66:66,"+
+			"actions=load:0x4->NXM_NX_REG0[],resubmit(,1)",
+		"table=0,in_port=4,actions=output:5",
+		"table=2,priority=900,dl_dst=66:66:66:66:66:66,action=output:5",
+		"table=0,in_port=8,dl_src=99:99:99:99:99:99,"+
+			"actions=load:0x9->NXM_NX_REG0[],resubmit(,1)",
+		"table=0,in_port=9,actions=output:8",
+		"table=2,priority=900,dl_dst=99:99:99:99:99:99,action=output:8",
+		"table=2,priority=1000,dl_dst=ff:ff:ff:ff:ff:ff,"+
+			"actions=output:5,output:8")
 	assert.Equal(t, exp, flows)
 }
 

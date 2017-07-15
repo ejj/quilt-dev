@@ -37,14 +37,8 @@ Registers
 
 The psuedocode currently uses three registers:
 
-Reg0 -- Indicates what type of port the packet came from.  1 for a Veth.  2 for a patch
-port. 0 if neither.
-
-Reg1 -- Contains the OpenFlow port number of the veth, or zero if the packet came from
-the gateway.
-
-Reg2 -- Contains the OpenFlow port number of the patch port, or zero if the packet came
-from the gateway.
+Reg0 -- Contains the OpenFlow port number of the patch port if the packet came from a
+veth. Otherwise it contains zero.
 
 Tables
 ------
@@ -53,80 +47,46 @@ Tables
 Table_0 { // Initial Table
 	for each db.Container {
 		if in_port=dbc.VethPort && dl_src=dbc.Mac {
-			reg0 <- 1
-			reg1 <- dbc.VethPort
-			reg2 <- dbc.PatchPort
+			reg0 <- dbc.PatchPort
 			goto Table_1
 		}
 
 		if in_port=dbc.PatchPort {
-			reg0 <- 2
-			reg1 <- dbc.VethPort
-			reg2 <- dbc.PatchPort
-			goto Table_1
+			output:dbc.VethPort
 		}
 	}
 
 	if in_port=LOCAL {
-		goto Table_1
+		goto Table_2
 	}
 }
 
-// Table_1 handles special cases for broadcast packets and the default gateway.  If no
-special cases apply, it outputs the packet.
+// Table_1 handles packets coming from a veth.
 Table_1 {
-	// If the veth sends a broadcast, send it to the gateway and the patch port.
-	if reg0=1 && dl_dst=ff:ff:ff:ff:ff:ff {
-		output:LOCAL,reg2
+	// Send broadcasts to the gateway and patch port.
+	if dl_dst=ff:ff:ff:ff:ff:ff {
+		output:LOCAL,reg0
 	}
 
-	// If the patch port sends a broadcast, send it to the veth.
-	if reg0=2 && dl_dst=ff:ff:ff:ff:ff:ff {
-		output:reg1
+	// Send packets from the veth to the gateway.
+	if dl_dst=gwMac {
+		output:LOCAL
 	}
 
+	// Everything else can be handled by OVN.
+	output:reg0
+}
+
+// Table_2 forwards packets coming from the LOCAL port.
+Table_2 {
 	// If the gateway sends a broadcast, send it to all veths.
 	if dl_dst=ff:ff:ff:ff:ff:ff {
 		output:veth{1..n}
 	}
 
-	// If the veth sends a packet to the load balancer router, forward it.
-	if reg0=1 && dl_dst=loadBalancerRouterMac {
-		output:reg2
-	}
-
-	// If the veth sends a packet to the gateway, forward it.
-	if reg0=1 && dl_dst=gwMac {
-		output:LOCAL
-	}
-
-	// Drop if a port other than a veth attempts to send to the default gateway.
-	if dl_dst=gwMac {
-		drop
-	}
-
-	// Packets from the gateway don't have the registers set, so use Table_2 to
-	// forward based on dl_dst.
-	if in_port=LOCAL {
-		goto Table_2
-	}
-
-	// Send packets from the veth to the patch port.
-	if reg0=1 {
-		output:reg2
-	}
-
-	// Send packets from the patch port to the veth.
-	if reg0=2 {
-		output:reg1
-	}
-}
-
-// Table_2 attempts to forward packets to a veth based on its destination MAC.
-Table_2 {
-	// Packets coming from the
+	// Otherwise output to the veth based on the dest mac.
 	for each db.Container {
-		if nw_dst=dbc.Mac {
+		if dl_dst=dbc.Mac {
 			output:veth
 		}
 	}
@@ -146,26 +106,17 @@ type container struct {
 	mac   string
 }
 
+var c = counter.New("OpenFlow")
+
 var staticFlows = []string{
 	// Table 0
-	"table=0,priority=1000,in_port=LOCAL,actions=resubmit(,1)",
+	"table=0,priority=1000,in_port=LOCAL,actions=resubmit(,2)",
 
 	// Table 1
-	"table=1,priority=1000,reg0=0x1,dl_dst=ff:ff:ff:ff:ff:ff," +
-		"actions=output:LOCAL,output:NXM_NX_REG2[]",
-	"table=1,priority=900,reg0=0x2,dl_dst=ff:ff:ff:ff:ff:ff," +
-		"actions=output:NXM_NX_REG1[]",
-	fmt.Sprintf("table=1,priority=850,reg0=1,dl_dst=%s,actions=output:NXM_NX_REG2[]",
-		ipdef.LoadBalancerMac),
-	fmt.Sprintf("table=1,priority=800,reg0=1,dl_dst=%s,actions=LOCAL",
-		ipdef.GatewayMac),
-	fmt.Sprintf("table=1,priority=700,dl_dst=%s,actions=drop", ipdef.GatewayMac),
-	"table=1,priority=600,in_port=LOCAL,actions=resubmit(,2)",
-	"table=1,priority=500,reg0=1,actions=output:NXM_NX_REG2[]",
-	"table=1,priority=400,reg0=2,actions=output:NXM_NX_REG1[]",
-}
-
-var c = counter.New("OpenFlow")
+	"table=1,priority=1000,dl_dst=ff:ff:ff:ff:ff:ff," +
+		"actions=output:LOCAL,output:NXM_NX_REG0[]",
+	fmt.Sprintf("table=1,priority=900,dl_dst=%s,actions=LOCAL", ipdef.GatewayMac),
+	"table=1,priority=800,actions=output:NXM_NX_REG0[]"}
 
 // ReplaceFlows adds flows associated with the provided containers, and removes all
 // other flows.
@@ -212,16 +163,20 @@ func AddFlows(containers []Container) error {
 func containerFlows(containers []container) []string {
 	var flows []string
 	for _, c := range containers {
-		template := fmt.Sprintf("table=0,priority=1000,in_port=%s%s,"+
-			"actions=load:0x%s->NXM_NX_REG0[],load:0x%x->NXM_NX_REG1[],"+
-			"load:0x%x->NXM_NX_REG2[],resubmit(,1)",
-			"%d", "%s", "%x", c.veth, c.patch)
-		flows = append(flows,
-			fmt.Sprintf(template, c.veth, ",dl_src="+c.mac, 1),
-			fmt.Sprintf(template, c.patch, "", 2),
-			fmt.Sprintf("table=2,priority=1000,dl_dst=%s,actions=output:%d",
-				c.mac, c.veth))
+		// Table 0
+		flow1 := fmt.Sprintf("table=0,in_port=%d,dl_src=%s,"+
+			"actions=load:0x%x->NXM_NX_REG0[],resubmit(,1)",
+			c.veth, c.mac, c.patch)
+		flow2 := fmt.Sprintf("table=0,in_port=%d,actions=output:%d",
+			c.patch, c.veth)
+
+		// Table 2
+		flow3 := fmt.Sprintf("table=2,priority=900,dl_dst=%s,action=output:%d",
+			c.mac, c.veth)
+
+		flows = append(flows, flow1, flow2, flow3)
 	}
+
 	return flows
 }
 
@@ -232,7 +187,7 @@ func allFlows(containers []container) []string {
 			fmt.Sprintf("output:%d", c.veth))
 	}
 	flows := append(staticFlows, containerFlows(containers)...)
-	return append(flows, "table=1,priority=850,dl_dst=ff:ff:ff:ff:ff:ff,actions="+
+	return append(flows, "table=2,priority=1000,dl_dst=ff:ff:ff:ff:ff:ff,actions="+
 		strings.Join(gatewayBroadcastActions, ","))
 }
 
