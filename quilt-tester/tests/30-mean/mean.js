@@ -1,10 +1,10 @@
-const {createDeployment} = require('@quilt/quilt');
-let HaProxy = require('@quilt/haproxy');
+const {createDeployment, publicInternet} = require('@quilt/quilt');
+let haproxy = require('@quilt/haproxy');
 let Mongo = require('@quilt/mongo');
 let Node = require('@quilt/nodejs');
 let infrastructure = require('../../config/infrastructure.js');
 
-let deployment = createDeployment({});
+let deployment = createDeployment();
 deployment.deploy(infrastructure);
 
 let mongo = new Mongo(3);
@@ -16,12 +16,13 @@ let app = new Node({
     MONGO_URI: mongo.uri('mean-example'),
   },
 });
-let haproxy = new HaProxy(3, app.services());
+
+// We should not need to access _app. We will fix this when we decide on a
+// general style.
+let proxy = haproxy.singleServiceLoadBalancer(3, app._app);
 
 mongo.connect(mongo.port, app);
 app.connect(mongo.port, mongo);
-haproxy.public();
+proxy.allowFrom(publicInternet, haproxy.exposedPort);
 
-deployment.deploy(app);
-deployment.deploy(mongo);
-deployment.deploy(haproxy);
+deployment.deploy([app, mongo, proxy]);
