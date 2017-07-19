@@ -54,7 +54,7 @@ func TestAddReplaceFlows(t *testing.T) {
 	client.AssertCalled(t, "OpenFlowPorts")
 
 	assert.Equal(t, map[string][]string{
-		"add-flows": containerFlows(nil),
+		"add-flows": nil,
 	}, actionsToFlows)
 
 	ofctl = func(a string, f []string) error { return anErr }

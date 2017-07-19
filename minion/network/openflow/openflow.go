@@ -152,7 +152,7 @@ func AddFlows(containers []Container) error {
 		return err
 	}
 
-	flows := containerFlows(resolveContainers(ofports, containers))
+	flows := allContainerFlows(resolveContainers(ofports, containers))
 	if err := ofctl("add-flows", flows); err != nil {
 		return fmt.Errorf("ovs-ofctl: %s", err)
 	}
@@ -160,21 +160,25 @@ func AddFlows(containers []Container) error {
 	return nil
 }
 
-func containerFlows(containers []container) []string {
+func allContainerFlows(containers []container) []string {
 	var flows []string
 	for _, c := range containers {
+		flows = append(flows, containerFlows(c)...)
+	}
+	return flows
+}
+
+func containerFlows(c container) []string {
+	flows := []string{
 		// Table 0
-		flow1 := fmt.Sprintf("table=0,in_port=%d,dl_src=%s,"+
+		fmt.Sprintf("table=0,in_port=%d,dl_src=%s,"+
 			"actions=load:0x%x->NXM_NX_REG0[],resubmit(,1)",
-			c.veth, c.mac, c.patch)
-		flow2 := fmt.Sprintf("table=0,in_port=%d,actions=output:%d",
-			c.patch, c.veth)
+			c.veth, c.mac, c.patch),
+		fmt.Sprintf("table=0,in_port=%d,actions=output:%d", c.patch, c.veth),
 
 		// Table 2
-		flow3 := fmt.Sprintf("table=2,priority=900,dl_dst=%s,action=output:%d",
-			c.mac, c.veth)
-
-		flows = append(flows, flow1, flow2, flow3)
+		fmt.Sprintf("table=2,priority=900,dl_dst=%s,action=output:%d",
+			c.mac, c.veth),
 	}
 
 	return flows
@@ -186,7 +190,8 @@ func allFlows(containers []container) []string {
 		gatewayBroadcastActions = append(gatewayBroadcastActions,
 			fmt.Sprintf("output:%d", c.veth))
 	}
-	flows := append(staticFlows, containerFlows(containers)...)
+
+	flows := append(staticFlows, allContainerFlows(containers)...)
 	return append(flows, "table=2,priority=1000,dl_dst=ff:ff:ff:ff:ff:ff,actions="+
 		strings.Join(gatewayBroadcastActions, ","))
 }
