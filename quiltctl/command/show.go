@@ -19,38 +19,38 @@ import (
 // An arbitrary length to truncate container commands to.
 const truncLength = 30
 
-// Ps contains the options for querying machines and containers.
-type Ps struct {
+// Show contains the options for querying machines and containers.
+type Show struct {
 	noTruncate bool
 
 	connectionHelper
 }
 
-// NewPsCommand creates a new Ps command instance.
-func NewPsCommand() *Ps {
-	return &Ps{}
+// NewShowCommand creates a new Show command instance.
+func NewShowCommand() *Show {
+	return &Show{}
 }
 
-var psCommands = "quilt ps [OPTIONS]"
-var psExplanation = "Display the status of quilt-managed machines and containers."
+var showCommands = "quilt show [OPTIONS]"
+var showExplanation = "Display the status of quilt-managed machines and containers."
 
 // InstallFlags sets up parsing for command line flags
-func (pCmd *Ps) InstallFlags(flags *flag.FlagSet) {
+func (pCmd *Show) InstallFlags(flags *flag.FlagSet) {
 	pCmd.connectionHelper.InstallFlags(flags)
 	flags.BoolVar(&pCmd.noTruncate, "no-trunc", false, "do not truncate container"+
 		" command output")
 	flags.Usage = func() {
-		util.PrintUsageString(psCommands, psExplanation, flags)
+		util.PrintUsageString(showCommands, showExplanation, flags)
 	}
 }
 
-// Parse parses the command line arguments for the ps command.
-func (pCmd *Ps) Parse(args []string) error {
+// Parse parses the command line arguments for the show command.
+func (pCmd *Show) Parse(args []string) error {
 	return nil
 }
 
 // Run retrieves and prints all machines and containers.
-func (pCmd *Ps) Run() int {
+func (pCmd *Show) Run() int {
 	if err := pCmd.run(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return 1
@@ -58,7 +58,7 @@ func (pCmd *Ps) Run() int {
 	return 0
 }
 
-func (pCmd *Ps) run() (err error) {
+func (pCmd *Show) run() (err error) {
 	machines, err := pCmd.client.QueryMachines()
 	if err != nil {
 		return fmt.Errorf("unable to query machines: %s", err)

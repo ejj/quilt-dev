@@ -15,25 +15,25 @@ import (
 	"github.com/quilt/quilt/db"
 )
 
-func TestPsFlags(t *testing.T) {
+func TestShowFlags(t *testing.T) {
 	t.Parallel()
 
 	expHost := "IP"
 
-	cmd := NewPsCommand()
+	cmd := NewShowCommand()
 	err := parseHelper(cmd, []string{"-H", expHost})
 
 	assert.NoError(t, err)
 	assert.Equal(t, expHost, cmd.host)
 
-	cmd = NewPsCommand()
+	cmd = NewShowCommand()
 	err = parseHelper(cmd, []string{"-no-trunc"})
 
 	assert.NoError(t, err)
 	assert.True(t, cmd.noTruncate)
 }
 
-func TestPsErrors(t *testing.T) {
+func TestShowErrors(t *testing.T) {
 	t.Parallel()
 
 	mockErr := errors.New("error")
@@ -44,7 +44,7 @@ func TestPsErrors(t *testing.T) {
 	mockClient.On("QueryMachines").Return([]db.Machine{{Status: db.Connected}}, nil)
 	mockClient.On("QueryContainers").Return(nil, mockErr)
 	mockClient.On("QueryImages").Return(nil, nil)
-	cmd := &Ps{false, connectionHelper{client: mockClient}}
+	cmd := &Show{false, connectionHelper{client: mockClient}}
 	assert.EqualError(t, cmd.run(), "unable to query containers: error")
 
 	// Error querying connections from LeaderClient
@@ -53,7 +53,7 @@ func TestPsErrors(t *testing.T) {
 	mockClient.On("QueryMachines").Return([]db.Machine{{Status: db.Connected}}, nil)
 	mockClient.On("QueryConnections").Return(nil, mockErr)
 	mockClient.On("QueryImages").Return(nil, nil)
-	cmd = &Ps{false, connectionHelper{client: mockClient}}
+	cmd = &Show{false, connectionHelper{client: mockClient}}
 	assert.EqualError(t, cmd.run(), "unable to query connections: error")
 }
 
@@ -62,7 +62,7 @@ func TestMachineOnly(t *testing.T) {
 	t.Parallel()
 
 	mockClient := new(mocks.Client)
-	cmd := &Ps{false, connectionHelper{client: mockClient}}
+	cmd := &Show{false, connectionHelper{client: mockClient}}
 
 	// Test failing to query machines.
 	mockClient.On("QueryMachines").Once().Return(nil, assert.AnError)
@@ -81,7 +81,7 @@ func TestMachineOnly(t *testing.T) {
 	mockClient.AssertNotCalled(t, "QueryContainers")
 }
 
-func TestPsSuccess(t *testing.T) {
+func TestShowSuccess(t *testing.T) {
 	t.Parallel()
 
 	mockClient := new(mocks.Client)
@@ -89,7 +89,7 @@ func TestPsSuccess(t *testing.T) {
 	mockClient.On("QueryMachines").Return(nil, nil)
 	mockClient.On("QueryConnections").Return(nil, nil)
 	mockClient.On("QueryImages").Return(nil, nil)
-	cmd := &Ps{false, connectionHelper{client: mockClient}}
+	cmd := &Show{false, connectionHelper{client: mockClient}}
 	assert.Equal(t, 0, cmd.Run())
 }
 

@@ -25,7 +25,7 @@ To see the help text for a given command:
 quilt COMMAND --help
 
 Commands:
-  counters, daemon, debug-logs, inspect, logs, minion, ps, run, ssh, stop,
+  counters, daemon, debug-logs, inspect, logs, minion, show, run, ssh, stop,
   version, setup-tls`
 
 func main() {

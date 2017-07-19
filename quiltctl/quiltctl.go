@@ -11,10 +11,13 @@ import (
 
 // Note the `minion` command is in quiltclt_posix.go as it only runs on posix systems.
 var commands = map[string]command.SubCommand{
-	"daemon":     command.NewDaemonCommand(),
-	"inspect":    &command.Inspect{},
-	"logs":       command.NewLogCommand(),
-	"ps":         command.NewPsCommand(),
+	"daemon":  command.NewDaemonCommand(),
+	"inspect": &command.Inspect{},
+	"logs":    command.NewLogCommand(),
+
+	"ps":   command.NewShowCommand(),
+	"show": command.NewShowCommand(),
+
 	"run":        command.NewRunCommand(),
 	"setup-tls":  &command.SetupTLS{},
 	"ssh":        command.NewSSHCommand(),
