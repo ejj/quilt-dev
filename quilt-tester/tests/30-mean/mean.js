@@ -21,7 +21,6 @@ let app = new Node({
 // general style.
 let proxy = haproxy.singleServiceLoadBalancer(3, app._app);
 
-mongo.connect(mongo.port, app);
 app.connect(mongo.port, mongo);
 proxy.allowFrom(publicInternet, haproxy.exposedPort);
 
