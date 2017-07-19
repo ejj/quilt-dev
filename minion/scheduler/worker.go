@@ -13,6 +13,7 @@ import (
 	"github.com/quilt/quilt/minion/ipdef"
 	"github.com/quilt/quilt/minion/network/openflow"
 	"github.com/quilt/quilt/minion/network/plugin"
+	"github.com/quilt/quilt/stitch"
 	"github.com/quilt/quilt/util"
 )
 
@@ -197,24 +198,73 @@ func filesHash(filepathToContent map[string]string) string {
 }
 
 func updateOpenflow(conn db.Conn, myIP string) {
-	dbcs := conn.SelectFromContainer(func(dbc db.Container) bool {
-		return dbc.EndpointID != "" && dbc.IP != "" && dbc.Minion == myIP
-	})
+	var dbcs []db.Container
+	var conns []db.Connection
 
-	ofcs := openflowContainers(dbcs)
+	txn := func(view db.Database) error {
+		conns = view.SelectFromConnection(nil)
+		dbcs = view.SelectFromContainer(func(dbc db.Container) bool {
+			return dbc.EndpointID != "" && dbc.IP != "" && dbc.Minion == myIP
+		})
+		return nil
+	}
+	conn.Txn(db.ConnectionTable, db.ContainerTable).Run(txn)
+
+	ofcs := openflowContainers(dbcs, conns)
 	if err := replaceFlows(ofcs); err != nil {
 		log.WithError(err).Warning("Failed to update OpenFlow")
 	}
 }
 
-func openflowContainers(dbcs []db.Container) []openflow.Container {
+func openflowContainers(dbcs []db.Container,
+	conns []db.Connection) []openflow.Container {
+
+	fromPubPorts := map[string][]int{}
+	toPubPorts := map[string][]int{}
+	for _, conn := range conns {
+		if conn.MinPort != conn.MaxPort {
+			c.Inc("Unsupported Public Port Range")
+			log.WithField("connection", conn).Debug(
+				"Unsupported Public Port Range")
+			continue
+		}
+
+		if conn.From == stitch.PublicInternetLabel {
+			fromPubPorts[conn.To] = append(fromPubPorts[conn.To],
+				conn.MinPort)
+		}
+
+		if conn.To == stitch.PublicInternetLabel {
+			toPubPorts[conn.From] = append(toPubPorts[conn.From],
+				conn.MinPort)
+		}
+	}
+
 	var ofcs []openflow.Container
 	for _, dbc := range dbcs {
 		_, peerQuilt := ipdef.PatchPorts(dbc.EndpointID)
-		ofcs = append(ofcs, openflow.Container{
+
+		ofc := openflow.Container{
 			Veth:  ipdef.IFName(dbc.EndpointID),
 			Patch: peerQuilt,
-			Mac:   ipdef.IPStrToMac(dbc.IP)})
+			Mac:   ipdef.IPStrToMac(dbc.IP),
+			IP:    dbc.IP,
+
+			ToPub:   map[int]struct{}{},
+			FromPub: map[int]struct{}{},
+		}
+
+		for _, l := range dbc.Labels {
+			for _, p := range toPubPorts[l] {
+				ofc.ToPub[p] = struct{}{}
+			}
+
+			for _, p := range fromPubPorts[l] {
+				ofc.FromPub[p] = struct{}{}
+			}
+		}
+
+		ofcs = append(ofcs, ofc)
 	}
 	return ofcs
 }

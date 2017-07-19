@@ -64,13 +64,13 @@ Table_0 { // Initial Table
 // Table_1 handles packets coming from a veth.
 Table_1 {
 	// Send broadcasts to the gateway and patch port.
-	if dl_dst=ff:ff:ff:ff:ff:ff {
+	if arp,dl_dst=ff:ff:ff:ff:ff:ff {
 		output:LOCAL,reg0
 	}
 
 	// Send packets from the veth to the gateway.
 	if dl_dst=gwMac {
-		output:LOCAL
+		goto Table_3
 	}
 
 	// Everything else can be handled by OVN.
@@ -84,13 +84,60 @@ Table_2 {
 		output:veth{1..n}
 	}
 
-	// Otherwise output to the veth based on the dest mac.
-	for each db.Container {
-		if dl_dst=dbc.Mac {
+       for each db.Container {
+		// The gateway may send unicast arps to the container.
+                if arp && dl_dst=dbc.mac {
+                        output:veth
+                }
+
+		// Packets originated by the gateway (i.e. DNS) are allowed.
+		if ip && dl_dst=dbc.mac && nw_src=gwIP {
 			output:veth
+		}
+
+		for each toPub {
+			// Response packets have toPub as the source port.
+			[tcp|udp],dl_dst=dbc.mac,ip_dst=dbc.ip,tp_src=toPub,
+				actions=output:veth
+		}
+
+		for each fromPub {
+			// Inbound packets have toPub as the destination port.
+			[tcp|udp],dl_dst=dbc.mac,ip_dst=dbc.ip,tp_dst=fromPub,
+				actions=output:veth
+		}
+        }
+}
+
+
+// Table_3 forwards unicast packets going to LOCAL port, or drops them if they are
+// disallowed.
+Table_3 {
+	// Containers are allowed to send packets destined for the gateway.
+	if ip && nw_dst=gwIP {
+		output:LOCAL
+	}
+
+	// Containers are allowed to ARP the gateway.
+	if arp {
+		output:LOCAL
+	}
+
+	for each db.Container {
+		for each toPub {
+			// Outbound packets have fromPub as the destination port.
+			[tcp|udp],dl_src=dbc.mac,ip_src=dbc.ip,tp_dst=toPub,
+				actions=output:LOCAL
+		}
+
+		for each fromPub {
+			// Response packets have fromPub as the source port.
+			[tcp|udp],dl_src=dbc.mac,ip_src=dbc.ip,tp_src=fromPub,
+				actions=output:LOCAL
 		}
 	}
 }
+
 */
 
 // A Container that needs OpenFlow rules installed for it.
@@ -98,6 +145,11 @@ type Container struct {
 	Veth  string
 	Patch string
 	Mac   string
+	IP    string
+
+	// Set of ports going to and from the public internet.
+	ToPub   map[int]struct{}
+	FromPub map[int]struct{}
 }
 
 type container struct {
@@ -114,10 +166,17 @@ var staticFlows = []string{
 	"table=0,priority=1000,in_port=LOCAL,actions=resubmit(,2)",
 
 	// Table 1
-	"table=1,priority=1000,dl_dst=ff:ff:ff:ff:ff:ff," +
+	"table=1,priority=1000,arp,dl_dst=ff:ff:ff:ff:ff:ff," +
 		"actions=output:LOCAL,output:NXM_NX_REG0[]",
-	fmt.Sprintf("table=1,priority=900,dl_dst=%s,actions=LOCAL", ipdef.GatewayMac),
-	"table=1,priority=800,actions=output:NXM_NX_REG0[]"}
+	fmt.Sprintf("table=1,priority=900,dl_dst=%s,actions=resubmit(,3)",
+		ipdef.GatewayMac),
+	"table=1,priority=800,actions=output:NXM_NX_REG0[]",
+
+	// Table 3
+	fmt.Sprintf("table=3,priority=1000,ip,nw_dst=%s,actions=output:LOCAL",
+		ipdef.GatewayIP),
+	"table=3,priority=900,arp,actions=output:LOCAL",
+}
 
 // ReplaceFlows adds flows associated with the provided containers, and removes all
 // other flows.
@@ -179,8 +238,36 @@ func containerFlows(c container) []string {
 			c.patchPort, c.vethPort),
 
 		// Table 2
-		fmt.Sprintf("table=2,priority=900,dl_dst=%s,action=output:%d",
+		fmt.Sprintf("table=2,priority=900,arp,dl_dst=%s,action=output:%d",
 			c.Mac, c.vethPort),
+		fmt.Sprintf("table=2,priority=800,ip,dl_dst=%s,nw_src=%s,"+
+			"action=output:%d", c.Mac, ipdef.GatewayIP, c.vethPort),
+	}
+
+	table2 := "table=2,priority=500,%s,dl_dst=%s,ip_dst=%s,tp_src=%d," +
+		"actions=output:%d"
+	table3 := "table=3,priority=500,%s,dl_src=%s,ip_src=%s,tp_dst=%d," +
+		"actions=output:LOCAL"
+	for to := range c.Container.ToPub {
+		flows = append(flows,
+			fmt.Sprintf(table2, "tcp", c.Mac, c.IP, to, c.vethPort),
+			fmt.Sprintf(table2, "udp", c.Mac, c.IP, to, c.vethPort),
+
+			fmt.Sprintf(table3, "tcp", c.Mac, c.IP, to),
+			fmt.Sprintf(table3, "udp", c.Mac, c.IP, to))
+	}
+
+	table2 = "table=2,priority=500,%s,dl_dst=%s,ip_dst=%s,tp_dst=%d," +
+		"actions=output:%d"
+	table3 = "table=3,priority=500,%s,dl_src=%s,ip_src=%s,tp_src=%d," +
+		"actions=output:LOCAL"
+	for from := range c.Container.FromPub {
+		flows = append(flows,
+			fmt.Sprintf(table2, "tcp", c.Mac, c.IP, from, c.vethPort),
+			fmt.Sprintf(table2, "udp", c.Mac, c.IP, from, c.vethPort),
+
+			fmt.Sprintf(table3, "tcp", c.Mac, c.IP, from),
+			fmt.Sprintf(table3, "udp", c.Mac, c.IP, from))
 	}
 
 	return flows

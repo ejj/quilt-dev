@@ -112,7 +112,11 @@ func (d driver) CreateEndpoint(req *dnet.CreateEndpointRequest) (
 		return nil, fmt.Errorf("ovs-vsctl: %v", err)
 	}
 
-	err = ofctl(openflow.Container{Veth: outer, Patch: peerQuilt, Mac: mac})
+	err = ofctl(openflow.Container{
+		Veth:  outer,
+		Patch: peerQuilt,
+		Mac:   mac,
+		IP:    addr.String()})
 	if err != nil {
 		// Problems with OpenFlow can be repaired later so just log.
 		log.WithError(err).Warn("Failed to add OpenFlow rules")

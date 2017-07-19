@@ -8,6 +8,7 @@ import (
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/minion/docker"
 	"github.com/quilt/quilt/minion/network/openflow"
+	"github.com/quilt/quilt/stitch"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -233,7 +234,22 @@ func TestSyncJoinScore(t *testing.T) {
 }
 
 func TestOpenFlowContainers(t *testing.T) {
-	res := openflowContainers([]db.Container{{EndpointID: "f", IP: "1.2.3.4"}})
-	exp := []openflow.Container{{Veth: "f", Patch: "q_f", Mac: "02:00:01:02:03:04"}}
+	conns := []db.Connection{
+		{MinPort: 1, MaxPort: 1000},
+		{MinPort: 2, MaxPort: 2, From: stitch.PublicInternetLabel, To: "red"},
+		{MinPort: 3, MaxPort: 3, To: stitch.PublicInternetLabel, From: "red"},
+		{MinPort: 4, MaxPort: 4, To: stitch.PublicInternetLabel, From: "blue"}}
+
+	res := openflowContainers([]db.Container{
+		{EndpointID: "f", IP: "1.2.3.4", Labels: []string{"red"}}},
+		conns)
+	exp := []openflow.Container{{
+		Veth:    "f",
+		Patch:   "q_f",
+		IP:      "1.2.3.4",
+		Mac:     "02:00:01:02:03:04",
+		ToPub:   map[int]struct{}{3: {}},
+		FromPub: map[int]struct{}{2: {}},
+	}}
 	assert.Equal(t, exp, res)
 }
