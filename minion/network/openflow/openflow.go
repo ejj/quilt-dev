@@ -101,9 +101,10 @@ type Container struct {
 }
 
 type container struct {
-	veth  int
-	patch int
-	mac   string
+	Container
+
+	vethPort  int
+	patchPort int
 }
 
 var c = counter.New("OpenFlow")
@@ -173,12 +174,13 @@ func containerFlows(c container) []string {
 		// Table 0
 		fmt.Sprintf("table=0,in_port=%d,dl_src=%s,"+
 			"actions=load:0x%x->NXM_NX_REG0[],resubmit(,1)",
-			c.veth, c.mac, c.patch),
-		fmt.Sprintf("table=0,in_port=%d,actions=output:%d", c.patch, c.veth),
+			c.vethPort, c.Mac, c.patchPort),
+		fmt.Sprintf("table=0,in_port=%d,actions=output:%d",
+			c.patchPort, c.vethPort),
 
 		// Table 2
 		fmt.Sprintf("table=2,priority=900,dl_dst=%s,action=output:%d",
-			c.mac, c.veth),
+			c.Mac, c.vethPort),
 	}
 
 	return flows
@@ -188,7 +190,7 @@ func allFlows(containers []container) []string {
 	var gatewayBroadcastActions []string
 	for _, c := range containers {
 		gatewayBroadcastActions = append(gatewayBroadcastActions,
-			fmt.Sprintf("output:%d", c.veth))
+			fmt.Sprintf("output:%d", c.vethPort))
 	}
 
 	flows := append(staticFlows, allContainerFlows(containers)...)
@@ -205,7 +207,11 @@ func resolveContainers(portMap map[string]int, containers []Container) []contain
 			continue
 		}
 
-		ofcs = append(ofcs, container{patch: patch, veth: veth, mac: c.Mac})
+		ofcs = append(ofcs, container{
+			Container: c,
+			patchPort: patch,
+			vethPort:  veth,
+		})
 	}
 	return ofcs
 }

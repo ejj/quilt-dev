@@ -69,9 +69,14 @@ func TestAddReplaceFlows(t *testing.T) {
 
 func TestAllFlows(t *testing.T) {
 	t.Parallel()
-	flows := allFlows([]container{
-		{patch: 4, veth: 5, mac: "66:66:66:66:66:66"},
-		{patch: 9, veth: 8, mac: "99:99:99:99:99:99"}})
+	flows := allFlows([]container{{
+		patchPort: 4,
+		vethPort:  5,
+		Container: Container{Mac: "66:66:66:66:66:66"},
+	}, {
+		patchPort: 9,
+		vethPort:  8,
+		Container: Container{Mac: "99:99:99:99:99:99"}}})
 	exp := append(staticFlows,
 		"table=0,in_port=5,dl_src=66:66:66:66:66:66,"+
 			"actions=load:0x4->NXM_NX_REG0[],resubmit(,1)",
@@ -92,5 +97,8 @@ func TestResolveContainers(t *testing.T) {
 	res := resolveContainers(map[string]int{"a": 3, "b": 4}, []Container{
 		{Veth: "a", Patch: "b", Mac: "mac"},
 		{Veth: "c", Patch: "d", Mac: "mac2"}})
-	assert.Equal(t, []container{{veth: 3, patch: 4, mac: "mac"}}, res)
+	assert.Equal(t, []container{{
+		vethPort:  3,
+		patchPort: 4,
+		Container: Container{Veth: "a", Patch: "b", Mac: "mac"}}}, res)
 }
