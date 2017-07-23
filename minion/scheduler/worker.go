@@ -222,6 +222,11 @@ func openflowContainers(dbcs []db.Container,
 	fromPubPorts := map[string][]int{}
 	toPubPorts := map[string][]int{}
 	for _, conn := range conns {
+		if conn.From != stitch.PublicInternetLabel &&
+			conn.To != stitch.PublicInternetLabel {
+			continue
+		}
+
 		if conn.MinPort != conn.MaxPort {
 			c.Inc("Unsupported Public Port Range")
 			log.WithField("connection", conn).Debug(
