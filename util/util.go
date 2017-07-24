@@ -211,7 +211,8 @@ func BackoffWaitFor(pred func() bool, cap time.Duration, timeout time.Duration) 
 
 // PrintUsageString formats and prints usage strings for quiltctl commands.
 func PrintUsageString(commands string, explanation string, flags *flag.FlagSet) {
-	fmt.Println("Usage: " + commands + "\n\n" + explanation + "\n")
+	fmt.Println("\nUsage: " + commands + "\n\n" + explanation + "\n")
+	fmt.Println("Options:")
 	if flags != nil {
 		flags.PrintDefaults()
 	} else {
