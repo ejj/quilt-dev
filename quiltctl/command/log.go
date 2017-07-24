@@ -31,9 +31,10 @@ func NewLogCommand() *Log {
 	return &Log{sshGetter: ssh.New}
 }
 
-var logCommands = "quilt logs [-H=<daemon_host>] [-i=<private_key>] <stitch_id>"
+var logCommands = `quilt logs [-f] [-H=<daemon_host>] [-i=<private_key>]
+[-since=<timestamp>] <id>`
 var logExplanation = `Fetch the logs of a container or machine minion. Either a container
-or machine ID can be supplied.
+or machine ID must be supplied.
 
 To get the logs of container 8879fd2dbcee with a specific private key:
 quilt logs -i ~/.ssh/quilt 8879fd2dbcee
@@ -46,8 +47,9 @@ func (lCmd *Log) InstallFlags(flags *flag.FlagSet) {
 	lCmd.connectionHelper.InstallFlags(flags)
 
 	flags.StringVar(&lCmd.privateKey, "i", "",
-		"the private key to use to connect to the host")
-	flags.StringVar(&lCmd.sinceTimestamp, "since", "", "show logs since timestamp")
+		"path to the private key to use when connecting to the host")
+	flags.StringVar(&lCmd.sinceTimestamp, "since", "", "show logs since timestamp"+
+		" (e.g. 2017-07-01T13:23:37) or relative time (e.g. 1h40m, 40s)")
 	flags.BoolVar(&lCmd.shouldTail, "f", false, "follow log output")
 	flags.BoolVar(&lCmd.showTimestamps, "t", false, "show timestamps")
 

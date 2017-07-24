@@ -32,7 +32,7 @@ func NewPsCommand() *Ps {
 }
 
 var psCommands = "quilt ps [-H=<daemon_host>]"
-var psExplanation = "`ps` displays the status of quilt-managed machines and containers."
+var psExplanation = "Display the status of quilt-managed machines and containers."
 
 // InstallFlags sets up parsing for command line flags
 func (pCmd *Ps) InstallFlags(flags *flag.FlagSet) {

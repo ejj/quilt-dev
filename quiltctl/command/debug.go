@@ -106,18 +106,11 @@ var debugCommands = `quilt debug-logs [-v] [-tar=<true/false>] [-i <keyfile>] [-
 <-all | -containers | -machines | <id> ...>`
 
 var debugExplanation = `Fetch logs for a set of machines or containers, placing
-the contents in appropriately named file inside a timestamped tarball. To store
-the contents in a folder instead, use the flag '-tar=false'.
+the contents in appropriately named files inside a timestamped tarball or folder.
 
-If the -all option is supplied, logs from all machines and containers will be
-fetched. Else if the -containers option is supplied, logs from all containers
-will be fetched. The -machines option is similar. Otherwise if none of the above
-options are given, a list of IDs can be supplied, which may be a mix of machines
-and containers in any order. Either one of these options or a list of IDs must
-be supplied.
-
-The -o option may be provided to optionally specify a name for the tar file (or
-folder) instead of using a timestamped name.
+To fetch debug logs from specific containers or machines, pass in the relevant
+IDs. If no IDs are provided, either the -all, -containers, or -machines flag must be
+set.
 
 If -all is supplied, all other arguments are ignored. If -containers or
 -machines are supplied, the list of IDs is ignored, but they do not override
@@ -133,17 +126,19 @@ quilt debug-logs -i ~/.ssh/quilt 09ed35808a0b`
 func (dCmd *Debug) InstallFlags(flags *flag.FlagSet) {
 	dCmd.connectionHelper.InstallFlags(flags)
 	flags.StringVar(&dCmd.privateKey, "i", "",
-		"the private key to use to connect to the host")
+		"path to the private key to use when connecting to the host")
 	flags.StringVar(&dCmd.outPath, "o", "",
 		"output path for the logs (defaults to timestamped path)")
-	flags.BoolVar(&dCmd.all, "all", false, "if provided, fetch all debug logs")
+	flags.BoolVar(&dCmd.all, "all", false, "if provided, fetch debug logs for all"+
+		" machines and containers")
 	flags.BoolVar(&dCmd.containers, "containers", false,
 		"if provided, fetch all debug logs for application containers")
 	flags.BoolVar(&dCmd.machines, "machines", false,
 		"if provided, fetch all debug logs for machines"+
 			" (including quilt system containers)")
 	flags.BoolVar(&dCmd.tar, "tar", true,
-		"if true (default), compress the logs into a tarball")
+		"if true (default), compress the logs into a tarball. If false, store"+
+			" logs in a folder")
 
 	flags.Usage = func() {
 		util.PrintUsageString(debugCommands, debugExplanation, flags)

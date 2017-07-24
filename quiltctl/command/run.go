@@ -34,10 +34,10 @@ func NewRunCommand() *Run {
 }
 
 var runCommands = `quilt run [-H=<daemon_host>] [-f] [-blueprint=<blueprint>] <blueprint>`
-var runExplanation = "`run`" + ` compiles the provided blueprint, and sends the result to
-the Quilt daemon to be executed. Confirmation is required if deploying the
-blueprint would cause changes to an existing cluster. Confirmation can be
-skipped with the` + " `-f` " + `flag.`
+var runExplanation = `Compile a blueprint, and deploy the system it describes.
+
+Confirmation is required if deploying the blueprint would change an existing
+deployment. Confirmation can be skipped with the -f flag.`
 
 // InstallFlags sets up parsing for command line flags.
 func (rCmd *Run) InstallFlags(flags *flag.FlagSet) {

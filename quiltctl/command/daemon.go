@@ -36,9 +36,8 @@ func NewDaemonCommand() *Daemon {
 	}
 }
 
-var daemonCommands = "quilt daemon [-H=<daemon_host> -admin-ssh-private-key=<key_path>]"
-var daemonExplanation = "`daemon` starts the quilt daemon, which listens for quilt " +
-	"API requests."
+var daemonCommands = "quilt daemon [-H=<daemon_host>]"
+var daemonExplanation = "Start the quilt daemon, which listens for quilt API requests."
 
 // InstallFlags sets up parsing for command line flags
 func (dCmd *Daemon) InstallFlags(flags *flag.FlagSet) {

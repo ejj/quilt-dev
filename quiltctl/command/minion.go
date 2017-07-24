@@ -30,13 +30,13 @@ func NewMinionCommand() *Minion {
 }
 
 var minionCommands = "quilt minion [-role=<role>]"
-var minionExplanation = "`role` defines the role of the quilt minion to run, " +
-	"`Master` or `Worker`."
+var minionExplanation = "Run the quilt minion."
 
 // InstallFlags sets up parsing for command line flags.
 func (mCmd *Minion) InstallFlags(flags *flag.FlagSet) {
 	mCmd.connectionFlags.InstallFlags(flags)
-	flags.StringVar(&mCmd.role, "role", "", "the role of this quilt minion")
+	flags.StringVar(&mCmd.role, "role", "", "the role of this quilt minion (Worker"+
+		" or Master)")
 	flags.StringVar(&mCmd.inboundPubIntf, "inbound-pub-intf", "",
 		"the interface on which to allow inbound traffic")
 	flags.StringVar(&mCmd.outboundPubIntf, "outbound-pub-intf", "",

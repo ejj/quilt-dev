@@ -35,8 +35,9 @@ func NewSSHCommand() *SSH {
 }
 
 var sshCommands = "quilt ssh <id> [command]"
-var sshExplanation = `Create an SSH session with the specified id. Either a container or
-machine ID can be supplied. If no command is supplied, a login shell is created.
+var sshExplanation = `SSH into or execute a command in a machine or container.
+
+If no command is supplied, a login shell is created.
 
 To login to machine 09ed35808a0b with a specific private key:
 quilt ssh -i ~/.ssh/quilt 09ed35808a0b
@@ -48,7 +49,7 @@ quilt ssh 8879fd2dbcee echo foo`
 func (sCmd *SSH) InstallFlags(flags *flag.FlagSet) {
 	sCmd.connectionHelper.InstallFlags(flags)
 	flags.StringVar(&sCmd.privateKey, "i", "",
-		"the private key to use to connect to the host")
+		"path to the private key to use when connecting to the host")
 	flags.BoolVar(&sCmd.allocatePTY, "t", false,
 		"attempt to allocate a pseudo-terminal")
 

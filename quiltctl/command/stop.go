@@ -25,10 +25,12 @@ func NewStopCommand() *Stop {
 var stopCommands = `quilt stop [-H=<daemon_host>] [-containers] [-namespace=<namespace> |
 <namespace>]`
 
-var stopExplanation = "`stop` " + `creates an empty Stitch for the given namespace, and
-sends it to the Quilt daemon to be executed. If no namespace is specified,
-` + "`stop`" + ` attempts to use the namespace currently tracked by the daemon. The
-result is that resources associated with the namespace, such as VMs, are freed.`
+var stopExplanation = `Stop a deployment.
+
+This will free all resources (e.g. VMs) associated with the deployment.
+
+If no namespace is specified, stop the deployment running in the namespace that is
+currently tracked by the daemon.`
 
 // InstallFlags sets up parsing for command line flags.
 func (sCmd *Stop) InstallFlags(flags *flag.FlagSet) {

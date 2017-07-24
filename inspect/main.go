@@ -10,7 +10,7 @@ import (
 )
 
 var inspCommands = "quilt inspect <blueprint> <pdf|ascii|graphviz>"
-var inspExplanation = "`inspect`" + ` is a tool that helps visualize blueprints.
+var inspExplanation = `Visualize a blueprint.
 
 Dependencies:
  - easy-graph (install Graph::Easy from cpan)

@@ -22,10 +22,10 @@ var quiltCommands = `quilt [-log-level=<level> | -l=<level>] [-H=<listen_address
 run <blueprint> | minion | stop [<namespace> | -containers] | ps | counters |
 ssh <id> [command] | logs <id> | debug-logs <id...> | version | setup-tls <dir>]`
 
-var quiltExplanation = `When provided a blueprint, quilt takes responsibility for
-deploying it as specified. Alternatively, quilt may be instructed to stop all
-deployments or containers in a given namespace, or in the default namespace if
-none is provided.`
+var quiltExplanation = `An approachable way to deploy to the cloud using Node.js.
+
+To see the help text for a given command:
+quilt <command> --help`
 
 func main() {
 	flag.Usage = func() {
