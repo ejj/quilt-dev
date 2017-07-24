@@ -11,18 +11,17 @@ import (
 
 	"github.com/quilt/quilt/api/client"
 	"github.com/quilt/quilt/api/pb"
+	"github.com/quilt/quilt/util"
 )
 
 const daemonTarget = "daemon"
 
-var usage = fmt.Sprintf(`usage: quilt counters [-H=<daemon_host>] <target>
-quilt counters displays internal counters tracked for
-debugging purposes.  It's intended for Quilt experts.
+var counterCommands = "quilt counters [-H=<daemon_host>] <target>"
+var counterExplanation = fmt.Sprintf(`quilt counters displays internal counters tracked
+for debugging purposes.  It's intended for Quilt experts.
 
 <target> should be %q to retrieve the counters for the
-daemon, or a machine's ID.
-
-`, daemonTarget)
+daemon, or a machine's ID.`, daemonTarget)
 
 // Counters implements the `quilt counters` command.
 type Counters struct {
@@ -35,8 +34,7 @@ type Counters struct {
 func (cmd *Counters) InstallFlags(flags *flag.FlagSet) {
 	cmd.connectionHelper.InstallFlags(flags)
 	flags.Usage = func() {
-		fmt.Fprintf(os.Stderr, usage)
-		flags.PrintDefaults()
+		util.PrintUsageString(counterCommands, counterExplanation, flags)
 	}
 }
 
