@@ -16,12 +16,12 @@ import (
 
 const daemonTarget = "daemon"
 
-var counterCommands = "quilt counters [-H=<daemon_host>] <target>"
+var counterCommands = "quilt counters [OPTIONS] TARGET"
 var counterExplanation = fmt.Sprintf(`Display internal counters tracked for
 debugging purposes.  Most users will not need this command.
 
-<target> should be %q to retrieve the counters for the daemon. To retrieve the
-counters for a machine, use the machine's ID as <target>.`, daemonTarget)
+TARGET should be %q to retrieve the counters for the daemon. To retrieve the
+counters for a machine, use the machine's ID as TARGET.`, daemonTarget)
 
 // Counters implements the `quilt counters` command.
 type Counters struct {

@@ -34,7 +34,7 @@ func NewSSHCommand() *SSH {
 	return &SSH{sshGetter: ssh.New}
 }
 
-var sshCommands = "quilt ssh <id> [command]"
+var sshCommands = "quilt ssh [OPTIONS] ID [COMMAND]"
 var sshExplanation = `SSH into or execute a command in a machine or container.
 
 If no command is supplied, a login shell is created.

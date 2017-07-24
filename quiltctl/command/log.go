@@ -31,8 +31,7 @@ func NewLogCommand() *Log {
 	return &Log{sshGetter: ssh.New}
 }
 
-var logCommands = `quilt logs [-f] [-H=<daemon_host>] [-i=<private_key>]
-[-since=<timestamp>] <id>`
+var logCommands = `quilt logs [OPTIONS] ID`
 var logExplanation = `Fetch the logs of a container or machine minion. Either a container
 or machine ID must be supplied.
 

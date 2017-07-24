@@ -17,7 +17,7 @@ type SetupTLS struct {
 	outDir string
 }
 
-const setupTLSCommands = `quilt setup-tls [OPTIONS] <outDir>`
+const setupTLSCommands = `quilt setup-tls [OPTIONS] OUT_DIR`
 const setupTLSExplanation = `Create the files necessary for TLS-encrypted communication
 with Quilt.  It generates private keys and certs for the signing CA, and peers.`
 

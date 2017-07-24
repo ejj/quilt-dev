@@ -102,8 +102,7 @@ func NewDebugCommand() *Debug {
 	return &Debug{sshGetter: ssh.New}
 }
 
-var debugCommands = `quilt debug-logs [-v] [-tar=<true/false>] [-i <keyfile>] [-o=<path>]
-<-all | -containers | -machines | <id> ...>`
+var debugCommands = `quilt debug-logs [OPTIONS] [ID...]`
 
 var debugExplanation = `Fetch logs for a set of machines or containers, placing
 the contents in appropriately named files inside a timestamped tarball or folder.

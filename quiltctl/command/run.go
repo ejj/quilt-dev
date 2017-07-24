@@ -33,7 +33,7 @@ func NewRunCommand() *Run {
 	return &Run{}
 }
 
-var runCommands = `quilt run [-H=<daemon_host>] [-f] [-blueprint=<blueprint>] <blueprint>`
+var runCommands = `quilt run [OPTIONS] BLUEPRINT`
 var runExplanation = `Compile a blueprint, and deploy the system it describes.
 
 Confirmation is required if deploying the blueprint would change an existing

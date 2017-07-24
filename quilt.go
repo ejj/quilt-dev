@@ -17,15 +17,16 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-var quiltCommands = `quilt [-log-level=<level> | -l=<level>] [-H=<listen_address>]
-[-verbose | -v] [-log-file=<log_output_file>] [daemon | inspect <blueprint> |
-run <blueprint> | minion | stop [<namespace> | -containers] | ps | counters |
-ssh <id> [command] | logs <id> | debug-logs <id...> | version | setup-tls <dir>]`
+var quiltCommands = "quilt [OPTIONS] COMMAND"
 
 var quiltExplanation = `An approachable way to deploy to the cloud using Node.js.
 
 To see the help text for a given command:
-quilt <command> --help`
+quilt COMMAND --help
+
+Commands:
+  counters, daemon, debug-logs, inspect, logs, minion, ps, run, ssh, stop,
+  version, setup-tls`
 
 func main() {
 	flag.Usage = func() {

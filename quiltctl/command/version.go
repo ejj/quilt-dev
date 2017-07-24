@@ -20,7 +20,7 @@ func NewVersionCommand() *Version {
 	return &Version{}
 }
 
-var versionCommands = "quilt version [-H=<daemon_host>]"
+var versionCommands = "quilt version [OPTIONS]"
 var versionExplanation = "Show the Quilt version information."
 
 // InstallFlags sets up parsing for command line flags.

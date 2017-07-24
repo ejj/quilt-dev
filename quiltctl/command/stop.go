@@ -22,8 +22,7 @@ func NewStopCommand() *Stop {
 	return &Stop{}
 }
 
-var stopCommands = `quilt stop [-H=<daemon_host>] [-containers] [-namespace=<namespace> |
-<namespace>]`
+var stopCommands = `quilt stop [NAMESPACE]`
 
 var stopExplanation = `Stop a deployment.
 

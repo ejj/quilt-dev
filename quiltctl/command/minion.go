@@ -29,7 +29,7 @@ func NewMinionCommand() *Minion {
 	return &Minion{}
 }
 
-var minionCommands = "quilt minion [-role=<role>]"
+var minionCommands = "quilt minion [OPTIONS]"
 var minionExplanation = "Run the quilt minion."
 
 // InstallFlags sets up parsing for command line flags.

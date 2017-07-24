@@ -9,8 +9,10 @@ import (
 	"github.com/quilt/quilt/util"
 )
 
-var inspCommands = "quilt inspect <blueprint> <pdf|ascii|graphviz>"
+var inspCommands = "quilt inspect BLUEPRINT OUTPUT_FORMAT"
 var inspExplanation = `Visualize a blueprint.
+
+OUTPUT_FORMAT can be pdf, ascii, or graphviz.
 
 Dependencies:
  - easy-graph (install Graph::Easy from cpan)

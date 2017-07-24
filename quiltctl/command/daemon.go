@@ -36,7 +36,7 @@ func NewDaemonCommand() *Daemon {
 	}
 }
 
-var daemonCommands = "quilt daemon [-H=<daemon_host>]"
+var daemonCommands = "quilt daemon [OPTIONS]"
 var daemonExplanation = "Start the quilt daemon, which listens for quilt API requests."
 
 // InstallFlags sets up parsing for command line flags
