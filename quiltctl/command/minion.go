@@ -29,8 +29,10 @@ func NewMinionCommand() *Minion {
 	return &Minion{}
 }
 
-var minionCommands = "quilt minion [OPTIONS]"
-var minionExplanation = "Run the quilt minion."
+var minionCommands = "quilt minion [OPTIONS] ROLE"
+var minionExplanation = `Run the quilt minion.
+
+ROLE should be Worker or Master.`
 
 // InstallFlags sets up parsing for command line flags.
 func (mCmd *Minion) InstallFlags(flags *flag.FlagSet) {
@@ -49,6 +51,9 @@ func (mCmd *Minion) InstallFlags(flags *flag.FlagSet) {
 
 // Parse parses the command line arguments for the minion command.
 func (mCmd *Minion) Parse(args []string) error {
+	if len(args) > 0 {
+		mCmd.role = args[0]
+	}
 	return nil
 }
 

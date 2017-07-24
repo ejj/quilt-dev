@@ -23,6 +23,22 @@ func TestMinionFlags(t *testing.T) {
 	assert.Equal(t, expRole, cmd.role)
 	assert.Equal(t, expInboundPubIntf, cmd.inboundPubIntf)
 	assert.Equal(t, expOutboundPubIntf, cmd.outboundPubIntf)
+
+	// Pass the minion role as an argument instead of a flag.
+	expRole = "Master"
+	expInboundPubIntf = "inbound"
+	expOutboundPubIntf = "outbound"
+
+	cmd = NewMinionCommand()
+	err = parseHelper(cmd, []string{
+		"-inbound-pub-intf", expInboundPubIntf,
+		"--outbound-pub-intf", expOutboundPubIntf,
+		expRole})
+
+	assert.NoError(t, err)
+	assert.Equal(t, expRole, cmd.role)
+	assert.Equal(t, expInboundPubIntf, cmd.inboundPubIntf)
+	assert.Equal(t, expOutboundPubIntf, cmd.outboundPubIntf)
 }
 
 func TestMinionFailure(t *testing.T) {
