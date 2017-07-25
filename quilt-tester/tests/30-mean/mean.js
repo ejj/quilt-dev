@@ -1,5 +1,5 @@
 const {createDeployment} = require('@quilt/quilt');
-let HaProxy = require('@quilt/haproxy').Haproxy;
+let HaProxy = require('@quilt/haproxy');
 let Mongo = require('@quilt/mongo');
 let Node = require('@quilt/nodejs');
 let infrastructure = require('../../config/infrastructure.js');
