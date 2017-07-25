@@ -39,7 +39,7 @@ web proxy:
 ```javascript
 var {Machine, createDeployment, Range, githubKeys} = require("@quilt/quilt");
 var Node = require("@quilt/nodejs");
-var HaProxy = require("@quilt/haproxy").Haproxy;
+var HaProxy = require("@quilt/haproxy");
 var Mongo = require("@quilt/mongo");
 
 // Create 3 replicated instances of each service.
