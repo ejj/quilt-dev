@@ -4,16 +4,48 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 )
+
+// 1) Split up Desired and and actual machine into two different tables
+
+// 2) Separate list thread populates the actual machine table
+// Actuall this is wrong, pulling it into it's own thread causes all sorts of
+// problems
+
+// 3) Foreman writes the role into the actual machine table based on what it queried
+
+// 4) Actual machines get their own special generated ID (really could be a hash of the
+// cloud id) or just the actual cloud id.
+
+// 5) Wait logic pulls into the join for the cluster.  Can trigger on changes on the
+// cloud machine table
+
+// 6) quilt ps can show machines dieing.
+
+// 7) We don't remove all of the acls when we stop a cluster which is broken. `quilt stop
+// namespace`
+
+// Can remove the stitch machines and database machines join from the engine
+
+// TODO add namespace to the machine tables.  Will make it super clear that we aren't
+// mucking with things in the old namespace.
+
+// TODO, pull the ACL join out of the cluster provider
+
+// TODO rename cluster package the cloud package
+
+// TODO what if there's a boot error?  What if a boot times out?
 
 // Machine represents a physical or virtual machine operated by a cloud provider on
 // which containers may be run.
 type Machine struct {
 	ID int //Database ID
 
-	/* Populated by the policy engine. */
-	StitchID    string
+	// TODO comment each of these
 	Role        Role
+	DesiredRole Role
+
 	Provider    ProviderName
 	Region      string
 	Size        string
@@ -22,13 +54,12 @@ type Machine struct {
 	FloatingIP  string
 	Preemptible bool
 
-	/* Populated by the cloud provider. */
 	CloudID   string //Cloud Provider ID
 	PublicIP  string
 	PrivateIP string
 
-	/* Populated by the cluster. */
-	Status string
+	Status     string
+	StatusTime time.Time `rowStringer:"omit"`
 }
 
 const (
@@ -39,13 +70,12 @@ const (
 	// successfully connected.
 	Connecting = "connecting"
 
-	// Reconnecting represents that we connected at one point, but are
-	// currently disconnected.
-	Reconnecting = "reconnecting"
-
 	// Connected represents that we are currently connected to the machine's
 	// minion.
 	Connected = "connected"
+
+	// TODO
+	Stopping = "stopping"
 )
 
 // InsertMachine creates a new Machine and inserts it into 'db'.
@@ -80,15 +110,38 @@ func (m Machine) getID() int {
 	return m.ID
 }
 
+func (db Database) GetMachineByIP(ip string) (Machine, bool) {
+	dbms := db.SelectFromMachine(func(m Machine) bool {
+		return m.PublicIP == ip
+	})
+
+	if len(dbms) != 1 {
+		return Machine{}, false
+	}
+
+	return dbms[0], true
+}
+
+func (m *Machine) SetStatus(status string) {
+	if m.Status != status {
+		m.Status = status
+		m.StatusTime = time.Now()
+	}
+}
+
 func (m Machine) String() string {
 	var tags []string
 
-	if m.StitchID != "" {
-		tags = append(tags, m.StitchID)
+	if m.CloudID != "" {
+		tags = append(tags, m.CloudID)
 	}
 
 	if m.Role != "" {
 		tags = append(tags, string(m.Role))
+	}
+
+	if m.Role != m.DesiredRole {
+		tags = append(tags, string(m.DesiredRole)+"*")
 	}
 
 	machineAttrs := []string{string(m.Provider), m.Region, m.Size}
@@ -96,10 +149,6 @@ func (m Machine) String() string {
 		machineAttrs = append(machineAttrs, "preemptible")
 	}
 	tags = append(tags, strings.Join(machineAttrs, " "))
-
-	if m.CloudID != "" {
-		tags = append(tags, m.CloudID)
-	}
 
 	if m.PublicIP != "" {
 		tags = append(tags, "PublicIP="+m.PublicIP)

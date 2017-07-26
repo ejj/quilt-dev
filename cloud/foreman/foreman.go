@@ -1,13 +1,12 @@
 package foreman
 
 import (
+	"context"
+	"errors"
 	"reflect"
-	"sync"
 	"time"
 
 	"google.golang.org/grpc"
-
-	"golang.org/x/net/context"
 
 	"github.com/quilt/quilt/connection"
 	"github.com/quilt/quilt/counter"
@@ -17,19 +16,11 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-var minions map[string]*minion
-
 // Credentials that the foreman should use to connect to its minions.
 var Credentials connection.Credentials
 
-// ConnectionTrigger sends messages when a change to the connection status of a
-// minion occurs.
-// The sends are non-blocking, so if there is already a notification in the
-// queue, another one isn't sent. This is reasonable because the purpose of
-// this trigger is just to notify the cluster that a change to the connection
-// status of some machines have changed -- the cluster checks all machines when
-// updating the status.
-var ConnectionTrigger = make(chan struct{}, 1)
+// TODO, as an incremental thing, pull this into one big thread, then later we can do a
+// thread per foreman.
 
 type client interface {
 	setMinion(pb.MinionConfig) error
@@ -42,180 +33,241 @@ type clientImpl struct {
 	cc *grpc.ClientConn
 }
 
-type minion struct {
-	client    client
-	connected bool
+type update struct {
+	ip     string
+	role   db.Role
+	status string
+}
 
-	machine db.Machine
-	config  pb.MinionConfig
+type foreman struct {
+	client client
+	conn   db.Conn
+	ip     string
+	status string
 
-	mark bool /* Mark and sweep garbage collection. */
+	exitChan   chan<- string
+	updateChan chan<- update
 }
 
 var c = counter.New("Foreman")
 
-// Init the first time the foreman operates on a new namespace.  It queries the currently
-// running VMs for their previously assigned roles, and writes them to the database.
-func Init(conn db.Conn) {
-	c.Inc("Initialize")
+var creds connection.Credentials
 
-	for _, m := range minions {
-		m.client.Close()
-	}
-	minions = map[string]*minion{}
+func Run(conn db.Conn, _creds connection.Credentials) {
+	creds = _creds
 
-	conn.Txn(db.MachineTable).Run(func(view db.Database) error {
-		machines := view.SelectFromMachine(func(m db.Machine) bool {
-			return m.PublicIP != "" && m.PrivateIP != "" && m.CloudID != ""
+	updateChan := make(chan update, 32)
+	go updateRoutine(conn, updateChan)
+
+	threads := map[string]struct{}{}
+	triggerChan := conn.Trigger(db.MachineTable)
+	exitChan := make(chan string, 32) // TODO comment
+	for {
+		select {
+		case exited := <-exitChan:
+			delete(threads, exited)
+		case <-triggerChan.C:
+		}
+
+		for {
+			// Drain exitChan.
+			select {
+			case exited := <-exitChan:
+				delete(threads, exited)
+				continue
+			default:
+			}
+			break
+		}
+
+		dbms := conn.SelectFromMachine(func(m db.Machine) bool {
+			return m.PublicIP != "" && m.PrivateIP != "" &&
+				m.Status != db.Stopping
 		})
 
-		updateMinionMap(machines)
-		forEachMinion(updateConfig)
-		return nil
-	})
+		for _, dbm := range dbms {
+			if _, ok := threads[dbm.PublicIP]; !ok {
+				threads[dbm.PublicIP] = struct{}{}
+				fm := foreman{
+					conn:       conn,
+					ip:         dbm.PublicIP,
+					updateChan: updateChan,
+					exitChan:   exitChan,
+				}
+				go fm.run()
+			}
+		}
+	}
 }
 
-// RunOnce should be called regularly to allow the foreman to update minion cfg.
-func RunOnce(conn db.Conn) {
-	c.Inc("Run")
+// TODO, comment explaining why we have this function insteadof the foreman doing the
+// update themselves.
+func updateRoutine(conn db.Conn, machineChan <-chan update) {
+	for m := range machineChan {
+		updateMap := map[string]update{}
+		updateMap[m.ip] = m
 
-	var blueprint string
-	var machines []db.Machine
-	conn.Txn(db.BlueprintTable,
-		db.MachineTable).Run(func(view db.Database) error {
+		// Give other threads a chance to fill up machineChan.
+		time.Sleep(250 * time.Millisecond)
 
-		machines = view.SelectFromMachine(func(m db.Machine) bool {
-			return m.PublicIP != "" && m.PrivateIP != ""
+		for {
+			select {
+			case m := <-machineChan:
+				updateMap[m.ip] = m
+				continue
+			default:
+			}
+			break
+		}
+
+		conn.Txn(db.MachineTable).Run(func(view db.Database) error {
+			dbms := view.SelectFromMachine(func(m db.Machine) bool {
+				return m.PublicIP != "" && m.Status != db.Stopping
+			})
+
+			for _, dbm := range dbms {
+				update, ok := updateMap[dbm.PublicIP]
+				if ok {
+					if update.status != "" {
+						dbm.Status = update.status
+					}
+					if update.role != db.None {
+						dbm.Role = update.role
+					}
+					view.Commit(dbm)
+				}
+			}
+			return nil
 		})
-
-		bp, _ := view.GetBlueprint()
-		blueprint = bp.Stitch.String()
-
-		return nil
-	})
-
-	updateMinionMap(machines)
-	forEachMinion(updateConfig)
-
-	var etcdIPs []string
-	for _, m := range minions {
-		if m.config.Role == pb.MinionConfig_MASTER && m.machine.PrivateIP != "" {
-			etcdIPs = append(etcdIPs, m.machine.PrivateIP)
-		}
 	}
-
-	// Assign all of the minions their new configs
-	forEachMinion(func(m *minion) {
-		if !m.connected {
-			return
-		}
-
-		newConfig := pb.MinionConfig{
-			FloatingIP:     m.machine.FloatingIP,
-			PrivateIP:      m.machine.PrivateIP,
-			Blueprint:      blueprint,
-			Provider:       string(m.machine.Provider),
-			Size:           m.machine.Size,
-			Region:         m.machine.Region,
-			EtcdMembers:    etcdIPs,
-			AuthorizedKeys: m.machine.SSHKeys,
-		}
-
-		if reflect.DeepEqual(newConfig, m.config) {
-			return
-		}
-
-		if err := m.client.setMinion(newConfig); err != nil {
-			log.WithError(err).Error("Failed to set minion config.")
-			return
-		}
-	})
 }
 
-// GetMachineRole uses the minion map to find the associated minion with
-// the IP, according to the foreman's last update cycle.
-func GetMachineRole(pubIP string) db.Role {
-	if min, ok := minions[pubIP]; ok {
-		return db.PBToRole(min.config.Role)
-	}
-	return db.None
-}
+func (f foreman) run() {
+	defer func() {
+		log.WithField("ip", f.ip).Debug("Foreman Exit")
+		f.exitChan <- f.ip
+	}()
+	log.WithField("ip", f.ip).Debug("Foreman Start")
 
-// IsConnected returns whether the foreman is connected to the minion at pubIP.
-func IsConnected(pubIP string) bool {
-	min, ok := minions[pubIP]
-	return ok && min.connected
-}
+	trigger := f.conn.TriggerTick(60, db.BlueprintTable, db.MachineTable)
+	fast := time.NewTicker(5 * time.Second)
 
-func updateMinionMap(machines []db.Machine) {
-	for _, m := range machines {
-		min, ok := minions[m.PublicIP]
-		if !ok {
-			client, err := newClient(m.PublicIP)
-			if err != nil {
+	defer trigger.Stop()
+	defer fast.Stop()
+
+	for {
+		select {
+		case <-trigger.C:
+		case <-fast.C:
+			if f.status == db.Connected {
 				continue
 			}
-			min = &minion{client: client}
-			minions[m.PublicIP] = min
 		}
 
-		min.machine = m
-		min.mark = true
-	}
-
-	for k, minion := range minions {
-		if minion.mark {
-			minion.mark = false
-		} else {
-			minion.client.Close()
-			delete(minions, k)
+		if err := f.runOnce(); err != nil {
+			return
 		}
 	}
 }
 
-func forEachMinion(do func(minion *minion)) {
-	var wg sync.WaitGroup
-	wg.Add(len(minions))
-	for _, m := range minions {
-		go func(m *minion) {
-			do(m)
-			wg.Done()
-		}(m)
-	}
-	wg.Wait()
-}
+// TODO test restarting the daemon (and the resulting role changes)
 
-func updateConfig(m *minion) {
-	var err error
-	m.config, err = m.client.getMinion()
+// TODO counter the hell out of all this stuff
+func (f *foreman) runOnce() error {
+	var dbms []db.Machine
+	var bp db.Blueprint
+
+	f.conn.Txn(db.BlueprintTable, db.MachineTable).Run(func(view db.Database) error {
+		dbms = view.SelectFromMachine(func(m db.Machine) bool {
+			return m.Status != db.Stopping
+		})
+		bp, _ = view.GetBlueprint() // TODO assert
+		return nil
+	})
+
+	missing := true
+	var dbm db.Machine
+	var etcdIPs []string
+	for _, m := range dbms {
+		if m.PublicIP == f.ip {
+			dbm = m
+			missing = false
+		}
+
+		if m.Role == db.Master && m.PrivateIP != "" {
+			etcdIPs = append(etcdIPs, m.PrivateIP)
+
+		}
+	}
+	if missing {
+		return errors.New("missing machine")
+	}
+
+	f.status = dbm.Status
+
+	if f.client == nil {
+		f.setStatus(db.Connecting)
+
+		var err error
+		f.client, err = newClient(f.ip)
+		if err != nil {
+			// TODO
+			// log.WithError(err).Debugf("Failed to connect to %s", f.ip)
+			return nil
+		}
+	}
+
+	cfg, err := f.client.getMinion()
 	if err != nil {
-		if m.connected {
-			log.WithError(err).Error("Failed to get minion config")
-		} else {
-			log.WithError(err).Debug("Failed to get minion config")
-		}
+		log.WithError(err).Debugf("Failed to get minion config from %s", f.ip)
+		f.setStatus(db.Connecting)
+		f.client = nil
+		return nil
 	}
 
-	connected := err == nil
-	if connected == m.connected {
-		return
+	f.setStatus(db.Connected)
+
+	role := db.PBToRole(cfg.Role)
+	if role != db.None && role != dbm.Role {
+		f.setRole(role)
 	}
 
-	m.connected = connected
-	notifyConnectionChange()
-	if m.connected {
-		c.Inc("Minion Connected")
-		log.WithField("machine", m.machine).Debug("New connection")
-	} else {
-		c.Inc("Minion Disconnected")
+	newConfig := pb.MinionConfig{
+		FloatingIP:     dbm.FloatingIP,
+		PrivateIP:      dbm.PrivateIP,
+		Blueprint:      bp.Stitch.String(),
+		Provider:       string(dbm.Provider),
+		Size:           dbm.Size,
+		Region:         dbm.Region,
+		EtcdMembers:    etcdIPs,
+		AuthorizedKeys: dbm.SSHKeys,
+	}
+
+	if reflect.DeepEqual(newConfig, cfg) {
+		return nil
+	}
+
+	if err := f.client.setMinion(newConfig); err != nil {
+		log.WithError(err).Debugf("Failed to set minion config on %s.", f.ip)
+		f.setStatus(db.Connecting)
+		f.client = nil
+		return nil
+	}
+
+	return nil
+}
+
+// Note that setStatus and setRole fail silently if the machine we're looking for is
+// missing.  The caller will close itself on its own on the next run through
+func (f foreman) setStatus(status string) {
+	if f.status != status {
+		f.status = status
+		f.updateChan <- update{ip: f.ip, status: status}
 	}
 }
 
-func notifyConnectionChange() {
-	select {
-	case ConnectionTrigger <- struct{}{}:
-	default:
-	}
+func (f foreman) setRole(role db.Role) {
+	f.updateChan <- update{ip: f.ip, role: role}
 }
 
 func newClientImpl(ip string) (client, error) {

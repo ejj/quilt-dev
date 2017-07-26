@@ -64,7 +64,7 @@ func main() {
 	// we are in debug mode
 	grpclog.SetLogger(l_mod.New(ioutil.Discard, "", 0))
 	if level == log.DebugLevel {
-		grpclog.SetLogger(log.StandardLogger())
+		// grpclog.SetLogger(log.StandardLogger()) TODO
 	}
 
 	if len(flag.Args()) == 0 {

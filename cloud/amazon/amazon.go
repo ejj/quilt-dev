@@ -10,7 +10,6 @@ import (
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/amazon/client"
 	"github.com/quilt/quilt/cloud/cfg"
-	"github.com/quilt/quilt/cloud/wait"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 
@@ -143,7 +142,7 @@ func (prvdr *Provider) Boot(bootSet []db.Machine) error {
 
 func (prvdr *Provider) bootReserved(br bootReq, count int64) error {
 	cloudConfig64 := base64.StdEncoding.EncodeToString([]byte(br.cfg))
-	resp, err := prvdr.RunInstances(&ec2.RunInstancesInput{
+	_, err := prvdr.RunInstances(&ec2.RunInstancesInput{
 		ImageId:          aws.String(amis[prvdr.region]),
 		InstanceType:     aws.String(br.size),
 		UserData:         &cloudConfig64,
@@ -153,29 +152,12 @@ func (prvdr *Provider) bootReserved(br bootReq, count int64) error {
 		MaxCount: &count,
 		MinCount: &count,
 	})
-	if err != nil {
-		return err
-	}
-
-	var ids []string
-	for _, inst := range resp.Instances {
-		ids = append(ids, *inst.InstanceId)
-	}
-
-	err = prvdr.wait(ids, true)
-	if err != nil {
-		if stopErr := prvdr.stopInstances(ids); stopErr != nil {
-			log.WithError(stopErr).WithField("ids", ids).
-				Error("Failed to cleanup failed boots")
-		}
-	}
-
 	return err
 }
 
 func (prvdr *Provider) bootSpot(br bootReq, count int64) error {
 	cloudConfig64 := base64.StdEncoding.EncodeToString([]byte(br.cfg))
-	spots, err := prvdr.RequestSpotInstances(spotPrice, count,
+	_, err := prvdr.RequestSpotInstances(spotPrice, count,
 		&ec2.RequestSpotLaunchSpecification{
 			ImageId:          aws.String(amis[prvdr.region]),
 			InstanceType:     aws.String(br.size),
@@ -183,22 +165,6 @@ func (prvdr *Provider) bootSpot(br bootReq, count int64) error {
 			SecurityGroupIds: []*string{aws.String(br.groupID)},
 			BlockDeviceMappings: []*ec2.BlockDeviceMapping{
 				blockDevice(br.diskSize)}})
-	if err != nil {
-		return err
-	}
-
-	var ids []string
-	for _, request := range spots {
-		ids = append(ids, *request.SpotInstanceRequestId)
-	}
-
-	err = prvdr.wait(ids, true)
-	if err != nil {
-		if stopErr := prvdr.stopSpots(ids); stopErr != nil {
-			log.WithError(stopErr).WithField("ids", ids).
-				Error("Failed to cleanup failed boots")
-		}
-	}
 	return err
 }
 
@@ -253,7 +219,7 @@ func (prvdr *Provider) stopSpots(ids []string) error {
 	cancelSpotsErr = prvdr.CancelSpotInstanceRequests(ids)
 	switch {
 	case stopInstsErr == nil && cancelSpotsErr == nil:
-		return prvdr.wait(ids, false)
+		return nil
 	case stopInstsErr == nil:
 		return cancelSpotsErr
 	case cancelSpotsErr == nil:
@@ -265,10 +231,7 @@ func (prvdr *Provider) stopSpots(ids []string) error {
 
 func (prvdr *Provider) stopInstances(ids []string) error {
 	err := prvdr.TerminateInstances(ids)
-	if err != nil {
-		return err
-	}
-	return prvdr.wait(ids, false)
+	return err
 }
 
 var trackedSpotStates = aws.StringSlice(
@@ -286,8 +249,15 @@ func (prvdr *Provider) listSpots() (machines []awsMachine, err error) {
 	}
 
 	for _, spot := range spots {
+		size := resolveString(spot.LaunchSpecification.InstanceType)
+		spotID := resolveString(spot.SpotInstanceRequestId)
 		machines = append(machines, awsMachine{
-			spotID: resolveString(spot.SpotInstanceRequestId),
+			spotID: spotID,
+			machine: db.Machine{
+				CloudID:     spotID,
+				Size:        size,
+				Preemptible: true,
+			},
 		})
 	}
 	return machines, nil
@@ -391,6 +361,7 @@ func (prvdr *Provider) List() (machines []db.Machine, err error) {
 	}
 
 	for _, awsm := range awsMachines {
+		// TODO, just return the machine ...
 		cm := awsm.machine
 		cm.Preemptible = awsm.spotID != ""
 		cm.CloudID = awsm.spotID
@@ -467,41 +438,7 @@ func (prvdr Provider) getInstanceID(spotID string) (string, error) {
 	return *spots[0].InstanceId, nil
 }
 
-/* Wait for the 'ids' to have booted or terminated depending on the value
- * of 'boot' */
-func (prvdr *Provider) wait(ids []string, boot bool) error {
-	return wait.Wait(func() bool {
-		machines, err := prvdr.List()
-		if err != nil {
-			log.WithError(err).Warn("Failed to list machines in the cluster.")
-			return false
-		}
-
-		exists := make(map[string]struct{})
-		for _, inst := range machines {
-			// When booting, if the machine isn't configured completely
-			// when the List() call was made, the cluster will fail to join
-			// and boot them twice. When halting, we don't consider this as
-			// the opposite will happen and we'll try to halt multiple times.
-			// To halt, we need the machines to be completely gone.
-			if boot && inst.Size == "" {
-				continue
-			}
-
-			exists[inst.CloudID] = struct{}{}
-		}
-
-		for _, id := range ids {
-			if _, ok := exists[id]; ok != boot {
-				return false
-			}
-		}
-
-		return true
-	})
-}
-
-// SetACLs adds and removes acls in `prvdr` so that it conforms to `acls`.
+// SetACLs adds and removes acls in `client` so that it conforms to `acls`.
 func (prvdr *Provider) SetACLs(acls []acl.ACL) error {
 	groupID, ingress, err := prvdr.getCreateSecurityGroup()
 	if err != nil {

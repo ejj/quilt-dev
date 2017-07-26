@@ -149,12 +149,12 @@ func getMachine(c client.Client, id string) (db.Machine, error) {
 
 	var choice *db.Machine
 	for _, m := range machines {
-		if len(id) > len(m.StitchID) || m.StitchID[:len(id)] != id {
+		if len(id) > len(m.CloudID) || m.CloudID[:len(id)] != id {
 			continue
 		}
 		if choice != nil {
-			return db.Machine{}, fmt.Errorf("ambiguous stitchIDs %s and %s",
-				choice.StitchID, m.StitchID)
+			return db.Machine{}, fmt.Errorf("ambiguous IDs %s and %s",
+				choice.CloudID, m.CloudID)
 		}
 		copy := m
 		choice = &copy

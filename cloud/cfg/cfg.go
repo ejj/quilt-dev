@@ -48,7 +48,7 @@ func Ubuntu(m db.Machine, inboundPublic string) string {
 		QuiltImage: img,
 		SSHKeys:    strings.Join(m.SSHKeys, "\n"),
 		LogLevel:   log.GetLevel().String(),
-		MinionOpts: minionOptions(m.Role, inboundPublic, MinionTLSDir),
+		MinionOpts: minionOptions(m.DesiredRole, inboundPublic, MinionTLSDir),
 		DockerOpts: dockerOpts,
 	})
 	if err != nil {

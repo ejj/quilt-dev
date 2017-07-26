@@ -12,6 +12,7 @@ import (
 	"github.com/quilt/quilt/api"
 	"github.com/quilt/quilt/api/client"
 	"github.com/quilt/quilt/api/pb"
+	"github.com/quilt/quilt/cloud"
 	"github.com/quilt/quilt/connection"
 	"github.com/quilt/quilt/connection/credentials"
 	"github.com/quilt/quilt/counter"
@@ -206,19 +207,7 @@ func (s server) Deploy(cts context.Context, deployReq *pb.DeployRequest) (
 		}
 	}
 
-	err = s.conn.Txn(db.BlueprintTable).Run(func(view db.Database) error {
-		blueprint, err := view.GetBlueprint()
-		if err != nil {
-			blueprint = view.InsertBlueprint()
-		}
-
-		blueprint.Stitch = stitch
-		view.Commit(blueprint)
-		return nil
-	})
-	if err != nil {
-		return &pb.DeployReply{}, err
-	}
+	cloud.Deploy(s.conn, stitch)
 
 	// XXX: Remove this error when the Vagrant provider is done.
 	for _, machine := range stitch.Machines {

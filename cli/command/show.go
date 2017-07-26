@@ -69,7 +69,7 @@ func (pCmd *Show) run() (err error) {
 
 	clusterUp := false
 	for _, m := range machines {
-		if m.Status == db.Connected || m.Status == db.Reconnecting {
+		if m.Status == db.Connected {
 			clusterUp = true
 		}
 	}
@@ -132,8 +132,13 @@ func writeMachines(fd io.Writer, machines []db.Machine) {
 			pubIP = m.FloatingIP
 		}
 
+		role := m.Role
+		if role == db.None {
+			role = m.DesiredRole
+		}
+
 		fmt.Fprintf(w, "%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
-			util.ShortUUID(m.StitchID), m.Role, m.Provider, m.Region, m.Size,
+			util.ShortUUID(m.CloudID), role, m.Provider, m.Region, m.Size,
 			pubIP, m.Status)
 	}
 }
@@ -161,8 +166,8 @@ func writeContainers(fd io.Writer, containers []db.Container, machines []db.Mach
 	ipIDMap := map[string]string{}
 	idMachineMap := map[string]db.Machine{}
 	for _, m := range machines {
-		ipIDMap[m.PrivateIP] = m.StitchID
-		idMachineMap[m.StitchID] = m
+		ipIDMap[m.PrivateIP] = m.CloudID
+		idMachineMap[m.CloudID] = m
 	}
 
 	machineDBC := map[string][]db.Container{}

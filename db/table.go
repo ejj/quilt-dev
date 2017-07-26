@@ -14,6 +14,9 @@ var BlueprintTable = TableType(reflect.TypeOf(Blueprint{}).String())
 // MachineTable is the type of the machine table.
 var MachineTable = TableType(reflect.TypeOf(Machine{}).String())
 
+// MachineTable is the type of the machine table.
+var StitchMachineTable = TableType(reflect.TypeOf(Machine{}).String())
+
 // ContainerTable is the type of the container table.
 var ContainerTable = TableType(reflect.TypeOf(Container{}).String())
 

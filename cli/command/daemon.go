@@ -16,6 +16,7 @@ import (
 	tlsIO "github.com/quilt/quilt/connection/credentials/tls/io"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/engine"
+	"github.com/quilt/quilt/quiltctl/command/credentials"
 	"github.com/quilt/quilt/util"
 	"github.com/quilt/quilt/version"
 
@@ -100,7 +101,7 @@ func (dCmd *Daemon) Run() int {
 	}
 
 	conn := db.New()
-	go engine.Run(conn, getPublicKey(sshKey))
+	go engine.Run(conn)
 	go server.Run(conn, dCmd.host, true, creds)
 
 	var minionTLSDir string
@@ -116,7 +117,7 @@ func (dCmd *Daemon) Run() int {
 		go cloud.SyncCredentials(conn, minionTLSDir, sshKey, ca)
 	}
 
-	cloud.Run(conn, creds, minionTLSDir)
+	cloud.Run(conn, creds, minionTLSDir, getPublicKey(sshKey))
 	return 0
 }
 

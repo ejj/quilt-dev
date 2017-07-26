@@ -13,15 +13,12 @@ import (
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/digitalocean/client"
-	"github.com/quilt/quilt/cloud/wait"
 	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/util"
 
 	"golang.org/x/oauth2"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 // DefaultRegion is assigned to Machines without a specified region
@@ -167,26 +164,17 @@ func (prvdr Provider) Boot(bootSet []db.Machine) error {
 
 // Creates a new machine, and waits for the machine to become active.
 func (prvdr Provider) createAndAttach(m db.Machine) error {
-	cloudConfig := cfg.Ubuntu(m, "")
 	createReq := &godo.DropletCreateRequest{
 		Name:              prvdr.namespace,
 		Region:            prvdr.region,
 		Size:              m.Size,
 		Image:             godo.DropletCreateImage{ID: imageID},
 		PrivateNetworking: true,
-		UserData:          cloudConfig,
+		UserData:          cfg.Ubuntu(m, ""),
 	}
 
-	d, _, err := prvdr.CreateDroplet(createReq)
-	if err != nil {
-		return err
-	}
-
-	pred := func() bool {
-		d, _, err := prvdr.GetDroplet(d.ID)
-		return err == nil && d.Status == "active"
-	}
-	return wait.Wait(pred)
+	_, _, err := prvdr.CreateDroplet(createReq)
+	return err
 }
 
 // UpdateFloatingIPs updates Droplet to Floating IP associations.
@@ -253,7 +241,11 @@ func (prvdr Provider) Stop(machines []db.Machine) error {
 	errChan := make(chan error, len(machines))
 	for _, m := range machines {
 		go func(m db.Machine) {
-			errChan <- prvdr.deleteAndWait(m.CloudID)
+			id, err := strconv.Atoi(m.CloudID)
+			if err == nil {
+				_, err = prvdr.DeleteDroplet(id)
+			}
+			errChan <- err
 		}(m)
 	}
 
@@ -266,26 +258,8 @@ func (prvdr Provider) Stop(machines []db.Machine) error {
 	return err
 }
 
-func (prvdr Provider) deleteAndWait(ids string) error {
-	id, err := strconv.Atoi(ids)
-	if err != nil {
-		return err
-	}
-
-	_, err = prvdr.DeleteDroplet(id)
-	if err != nil {
-		return err
-	}
-
-	pred := func() bool {
-		d, _, err := prvdr.GetDroplet(id)
-		return err != nil || d == nil
-	}
-	return wait.Wait(pred)
-}
-
 // SetACLs is not supported in DigitalOcean.
 func (prvdr Provider) SetACLs(acls []acl.ACL) error {
-	log.Debug("DigitalOcean does not support ACLs")
+	// TODO Remove the log message in a separate commit
 	return nil
 }
