@@ -194,11 +194,12 @@ into a browser window.  A site with "Hello, world!" text should appear.
 
 Once you've launched a container, you'll often need to login to change something
 or debug an issue.  The `quilt ssh` command makes this easy.  Use the container
-ID in the `quilt ps` output as the argument to `quilt ssh` to login to that
-container:
+ID in the `quilt show` output as the argument to `quilt ssh` to login to that
+container. For instance, to ssh into a container or VM whose ID starts with
+bd68:
 
 ```console
-$ quilt ssh bd68 # Replace the argument to ssh with the ID of your container
+$ quilt ssh bd68
 ```
 
 Note that you don't need to type the whole ID; as long as you use a unique

@@ -7,14 +7,21 @@ Stitches and querying deployment information. Thus, TLS should be enabled for
 all non-experimental deployments. It is currently disabled by default.
 
 ### Quickstart
+Generate the necessary TLS files.
+
 ```console
-# Generate the necessary TLS files.
 $ quilt setup-tls ~/.quilt/tls
+```
 
-# Start the daemon with TLS enabled.
+Start the daemon with TLS enabled.
+
+```console
 $ quilt daemon -tls-dir ~/.quilt/tls
+```
 
-# Use the other Quilt commands as normal.
+Use the other Quilt commands as normal.
+
+```console
 $ quilt run ./example.js
 $ quilt show
 MACHINE         ROLE      PROVIDER    REGION       SIZE         PUBLIC IP         STATUS
@@ -23,18 +30,24 @@ b92d625c6847    Worker    Amazon      us-west-1    m3.medium    52.53.170.129   
 
 CONTAINER       MACHINE         COMMAND                     LABELS    STATUS     CREATED           PUBLIC IP
 1daa461f0805    b92d625c6847    alpine tail -f /dev/null    alpine    running    24 seconds ago    52.53.170.129:8000
+```
 
-# However, trying to connect to a cluster with different credentials fails.
-# This can be simulated by restarting the daemon and running the same blueprint,
-# but with different TLS credentials. Note that the machines never connect.
+However, trying to connect to a cluster with different credentials fails.
+This can be simulated by restarting the daemon and running the same blueprint,
+but with different TLS credentials. Note that the machines never connect.
+
+```console
 $ quilt daemon -tls-dir ~/.quilt/other-credentials
 $ quilt run ./example.js
 $ quilt show
 MACHINE         ROLE      PROVIDER    REGION       SIZE         PUBLIC IP        STATUS
 8a0d2198229c    Master    Amazon      us-west-1    m3.medium    54.153.11.92     connecting
 b92d625c6847    Worker    Amazon      us-west-1    m3.medium    52.53.170.129    connecting
+```
 
-# Trying to connect in Insecure mode also fails. Note that the machines never connect.
+Trying to connect in Insecure mode also fails. Note that the machines never connect.
+
+```console
 $ quilt daemon
 $ quilt run ./example.js
 $ quilt show
