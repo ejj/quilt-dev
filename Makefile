@@ -74,16 +74,15 @@ COV_SKIP= /api/client/mocks \
 	  /scripts/format \
 	  /version
 
-COV_PKG = $(subst github.com/quilt/quilt,,$(PACKAGES))
-go-coverage: $(addsuffix .cov, $(filter-out $(COV_SKIP), $(COV_PKG)))
+go-coverage:
+	for package in $(filter-out $(COV_SKIP), $(subst github.com/quilt/quilt,,$(PACKAGES))) ; do \
+	    go test -coverprofile=.$$package.cov .$$package && \
+	    go tool cover -html=.$$package.cov -o .$$package.html ; \
+	done
 	echo "" > coverage.txt
 	for f in $^ ; do \
 	    cat .$$f >> coverage.txt ; \
 	done
-
-%.cov:
-	go test -coverprofile=.$@ .$*
-	go tool cover -html=.$@ -o .$@.html
 
 js-coverage:
 	npm run-script cov > bindings.lcov
