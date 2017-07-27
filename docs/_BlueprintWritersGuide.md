@@ -161,11 +161,10 @@ are each assigned unique hostnames when they're initialized, so we can create
 the lobsters container and initialize the URL as follows:
 
 ```javascript
-var lobstersContainer = new Container("kayousterhout/lobsters"); var
-sqlDatabaseUrl = "mysql2://root:" + mysqlOpts.rootPassword + "@" +
-sqlService.hostname() + ":3306/lobsters";
-lobstersContainer.setEnv("DATABASE_URL", sqlDatabaseUrl); var
-lobstersService = new Service("lobsters", [lobstersContainer]);
+var lobstersContainer = new Container("kayousterhout/lobsters");
+var sqlDatabaseUrl = "mysql2://root:" + mysqlOpts.rootPassword + "@" + sqlService.hostname() + ":3306/lobsters";
+lobstersContainer.setEnv("DATABASE_URL", sqlDatabaseUrl);
+var lobstersService = new Service("lobsters", [lobstersContainer]);
 ```
 
 ### Allowing network connections
@@ -215,14 +214,15 @@ We've now defined a deployment with a master and worker machine.  Let's finally
 deploy the two services on that infrastructure:
 
 ```javascript
-deployment.deploy(sqlService); deployment.deploy(lobstersService);
+deployment.deploy(sqlService);
+deployment.deploy(lobstersService);
 ```
     
 We're done!  Running the blueprint is now trivial.  With a quilt daemon running, run
 your new blueprint (which, in this case, is called lobsters.js):
 
 ```console
-$ quilt run lobsters.js
+$ quilt run ./lobsters.js
 ```
     
 Now users of lobsters, for example, can deploy it without needing to worry about

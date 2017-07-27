@@ -20,10 +20,10 @@ object must be passed to the `Container` constructor.
 For example,
 
 ```javascript
-new Container(new Image("my-image-name",
+var container = new Container(new Image("my-image-name",
   "FROM nginx\n" +
   "RUN cd /web_root && git clone github.com/my/web_repo"
-))
+));
 ```
 
 would deploy an image called `my-image-name` built on top of the `nginx` image,
@@ -32,7 +32,7 @@ with the `github.com/my/web_repo` repository cloned into `/web_root`.
 If the Dockerfile is saved as a file, it can simply be read in:
 
 ```javascript
-new Container(new Image("my-image-name", fs.readFileSync("./Dockerfile")))
+var container = new Container(new Image("my-image-name", fs.readFileSync("./Dockerfile")));
 ```
 
 If a user runs a blueprint that uses a custom image, then runs another blueprint
