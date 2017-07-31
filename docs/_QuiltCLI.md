@@ -32,7 +32,7 @@ $ quilt COMMAND --help
 | `inspect`    | Visualize a blueprint.                                                                           |
 | `logs`       | Fetch the logs of a container or machine minion.                                                 |
 | `minion`     | Run the quilt minion.                                                                            |
-| `ps`         | Display the status of quilt-managed machines and containers.                                     |
+| `show`       | Display the status of quilt-managed machines and containers.                                     |
 | `run`        | Compile a blueprint, and deploy the system it describes.                                         |
 | `ssh`        | SSH into or execute a command in a machine or container.                                         |
 | `stop`       | Stop a deployment.                                                                               |

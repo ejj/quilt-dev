@@ -149,11 +149,10 @@ This command tells the daemon to launch the machines and containers described in
 `main.js`.  It will return immediately, but if you return to the `daemon`
 window, you'll see some things starting to happen.  The best way to see what's
 happening is to return to the window where you typed `quilt run`, and now
-use Quilt's `ps	` command (`ps` stands for "processes", and lists everything
-that's running in Quilt):
+use Quilt's `show` command to list everything that's running:
 
 ```console
-$ quilt ps
+$ quilt show
 MACHINE         ROLE      PROVIDER    REGION       SIZE     PUBLIC IP    STATUS e5b1839d2bea    Master    Amazon      us-west-1    t2.micro              disconnected
 e2401c348c78    Worker    Amazon      us-west-1    t2.micro              disconnected
 ```
@@ -163,10 +162,10 @@ has launched two machines, one as a master and one as a worker, in Amazon.  Both
 machines are disconnected, because they're still being initialized. When a
 machine is fully booted and configured, it will be marked as connected.
 Launching machines on AWS takes a few minutes, and eventually the output of
-`ps` will look like:
+`show` will look like:
 
 ```console
-$ quilt ps
+$ quilt show
 MACHINE         ROLE      PROVIDER    REGION       SIZE        PUBLIC IP         STATUS
 e5b1839d2bea    Master    Amazon      us-west-1    t2.micro    54.183.98.15      connected
 e2401c348c78    Worker    Amazon      us-west-1    t2.micro    54.241.251.192    connected
@@ -195,7 +194,7 @@ webTier.allowFrom(publicInternet, 80);
 ```
 
 This means you can
-access the webpage you launched by copy-pasting the IP address from `quilt ps`
+access the webpage you launched by copy-pasting the IP address from `quilt show`
 into a browser window.  A site with "Hello, world!" text should appear.
 
 Once you've launched a container, you'll often need to login to change something
@@ -228,7 +227,7 @@ stop the nginx container and start a new one; we just updated the view of what
 the deployment should look like (in this case, by changing `index.html`), and
 Quilt automatically detects this and updates the cluster accordingly.  Quilt
 will prompt you to accept the changes that you're making to your deployment;
-type `y`.  If you run `quilt ps`, you'll notice that Quilt has stopped the old
+type `y`.  If you run `quilt show`, you'll notice that Quilt has stopped the old
 container and is starting a new one.  If you navigate to the new IP address,
 you'll notice your new page is up.
 
@@ -241,5 +240,5 @@ command:
 $ quilt stop
 ```
 
-You can use `quilt ps` to ensure nothing is still running.  At this point, you
+You can use `quilt show` to ensure nothing is still running.  At this point, you
 can kill the Quilt daemon.
