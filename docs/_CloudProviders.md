@@ -4,7 +4,7 @@ This section describes the basic configuration of the cloud providers supported
 by Quilt, and gives some details about how to enable extra features (e.g.,
 floating IP addresses) on each cloud provider.
 
-### Amazon EC2
+## Amazon EC2
 
 For Amazon EC2, you'll first need to create an account with [Amazon Web
 Services](https://aws.amazon.com/ec2/) and then find your access credentials
