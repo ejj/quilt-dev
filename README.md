@@ -38,22 +38,22 @@ Run any container.
 [//]: # (b1)
 <!-- const {Container, Service, Machine, publicInternet} = require('@quilt/quilt'); -->
 ```javascript
-let webContainer = new Container("someNodejsImage");
+let webContainer = new Container('someNodejsImage');
 ```
 
 Load balance traffic with Services.
 
 [//]: # (b1)
 ```javascript
-let webApp = new Service("web", webContainer.replicate(3)); // A load balancer over 3 containers.
+let webApp = new Service('web', webContainer.replicate(3)); // A load balancer over 3 containers.
 ```
 
 Share and import blueprints via npm.
 
 [//]: # (b1)
 ```javascript
-const Redis = require("@quilt/redis");
-let redis = new Redis(2, "AUTH_PASSWORD"); // 2 Redis database replicas.
+const Redis = require('@quilt/redis');
+let redis = new Redis(2, 'AUTH_PASSWORD'); // 2 Redis database replicas.
 ```
 
 Set up a secure network.
@@ -69,8 +69,8 @@ Deploy VMs on any [supported cloud provider](#deploy-quickly-on).
 [//]: # (b1)
 ```javascript
 let vm = new Machine({
-  provider: "Amazon",
-  size: "t2.micro"
+  provider: 'Amazon',
+  size: 't2.micro'
 });
 ```
 

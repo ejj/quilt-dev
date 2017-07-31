@@ -26,10 +26,10 @@ To deploy an `m3.medium` instance on Amazon EC2's `us-west-2` region as a
 
 ```javascript
 deployment.deploy(new Machine({
-    provider: "Amazon",
-    region: "us-west-2",
-    size: "m3.medium",
-    role: "Worker" }));
+  provider: 'Amazon',
+  region: 'us-west-2',
+  size: 'm3.medium',
+  role: 'Worker'}));
 ```
 
 ## DigitalOcean
@@ -50,10 +50,10 @@ Now, to deploy a DigitalOcean droplet in the `sfo1` zone of size `512mb` as a
 
 ```javascript
 deployment.deploy(new Machine({
-    provider: "DigitalOcean",
-    region: "sfo1",
-    size: "512mb",
-    role: "Worker" }));
+  provider: 'DigitalOcean',
+  region: 'sfo1',
+  size: '512mb',
+  role: 'Worker'}));
 ```
 
 ### Floating IPs
@@ -89,8 +89,8 @@ Now, to deploy a GCE machine in the `us-east1-b` zone of size
 
 ```javascript
 deployment.deploy(new Machine({
-    provider: "Google",
-    region: "us-east1-b",
-    size: "n1-standard-1",
-    role: "Worker" }));
+  provider: 'Google',
+  region: 'us-east1-b',
+  size: 'n1-standard-1',
+  role: 'Worker'}));
 ```

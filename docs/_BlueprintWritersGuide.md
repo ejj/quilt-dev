@@ -127,7 +127,7 @@ First, let's write the Quilt blueprint to get the MySQL container up and running
 need to create a container based on the mysql image:
 
 ```javascript
-var sqlContainer = new Container("mysql:5.6.32");
+let sqlContainer = new Container('mysql:5.6.32');
 ```
     
 Here, the argument to `Container` is the name of an image.  You can also pass in
@@ -139,7 +139,7 @@ particular, we need to specify a root password for SQL.  We can set the root
 password to `foo` with the `setEnv` function:
 
 ```javascript
-sqlContainer.setEnv("MYSQL_ROOT_PASSWORD", "foo");
+sqlContainer.setEnv('MYSQL_ROOT_PASSWORD', 'foo');
 ```
     
 All containers need to be part of a service in order to be executed.  In this
@@ -147,7 +147,7 @@ case, the service just has our single mysql container.  Each service is created
 using a name and a list of containers:
 
 ```javascript
-var sqlService = new Service("sql", [sqlContainer]);
+let sqlService = new Service('sql', [sqlContainer]);
 ```
     
 The SQL service is now initialized.  
@@ -161,10 +161,10 @@ are each assigned unique hostnames when they're initialized, so we can create
 the lobsters container and initialize the URL as follows:
 
 ```javascript
-var lobstersContainer = new Container("kayousterhout/lobsters");
-var sqlDatabaseUrl = "mysql2://root:" + mysqlOpts.rootPassword + "@" + sqlService.hostname() + ":3306/lobsters";
-lobstersContainer.setEnv("DATABASE_URL", sqlDatabaseUrl);
-var lobstersService = new Service("lobsters", [lobstersContainer]);
+let lobstersContainer = new Container('kayousterhout/lobsters');
+const sqlDatabaseUrl = 'mysql2://root:' + mysqlOpts.rootPassword + '@' + sqlService.hostname() + ':3306/lobsters';
+lobstersContainer.setEnv('DATABASE_URL', sqlDatabaseUrl);
+let lobstersService = new Service('lobsters', [lobstersContainer]);
 ```
 
 ### Allowing network connections
@@ -195,7 +195,7 @@ the base machine will be an Amazon instance that allows ssh access from the
 public key "bar":
 
 ```javascript
-var baseMachine = new Machine({provider: "Amazon", sshKeys: ["ssh-rsa bar"]});
+let baseMachine = new Machine({provider: 'Amazon', sshKeys: ['ssh-rsa bar']});
 ```
     
 Now, using that base machine, we can deploy a master and a worker machine.  All
@@ -205,7 +205,7 @@ services, you must create a deployment object, which maintains state about the
 deployment.
 
 ```javascript
-var deployment = createDeployment();
+const deployment = createDeployment();
 deployment.deploy(baseMachine.asMaster());
 deployment.deploy(baseMachine.asWorker());
 ```

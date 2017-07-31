@@ -20,9 +20,9 @@ object must be passed to the `Container` constructor.
 For example,
 
 ```javascript
-var container = new Container(new Image("my-image-name",
-  "FROM nginx\n" +
-  "RUN cd /web_root && git clone github.com/my/web_repo"
+let container = new Container(new Image('my-image-name',
+  'FROM nginx\n' +
+  'RUN cd /web_root && git clone github.com/my/web_repo'
 ));
 ```
 
@@ -32,7 +32,7 @@ with the `github.com/my/web_repo` repository cloned into `/web_root`.
 If the Dockerfile is saved as a file, it can simply be read in:
 
 ```javascript
-var container = new Container(new Image("my-image-name", fs.readFileSync("./Dockerfile")));
+let container = new Container(new Image('my-image-name', fs.readFileSync('./Dockerfile')));
 ```
 
 If a user runs a blueprint that uses a custom image, then runs another blueprint
@@ -54,15 +54,15 @@ For example,
 
 ```javascript
 {
-  "/etc/myconf": "foo"
+  '/etc/myconf': 'foo'
 }
 ```
 
 would create a file at `/etc/myconf` containing the text `foo`.
 
 ```javascript
-new Container("haproxy").withFiles({
-  "/etc/myconf": "foo"
+new Container('haproxy').withFiles({
+  '/etc/myconf': 'foo'
 });
 ```
 
