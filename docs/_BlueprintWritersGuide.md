@@ -174,7 +174,7 @@ service.  With Quilt, by default, all network connections are blocked.  To allow
 lobsters to talk to mysql, we need to explicitly open the mysql port (3306):
 
 ```javascript
-lobstersService.connect(3306, sqlService);
+sqlService.allowFrom(lobstersService, 3306);
 ```
     
 Because lobsters is a web application, the relevant port should also be open to
@@ -182,7 +182,7 @@ the public internet on the lobsters service.  Quilt has a `publicInternet`
 variable that can be used to connect services to any IP address:
 
 ```javascript
-publicInternet.connect(3000, lobstersService);
+lobstersService.allowFrom(publicInternet, 3000);
 ```
     
 ### Deploying the application on infrastructure
