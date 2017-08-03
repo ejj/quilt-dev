@@ -198,7 +198,7 @@ func TestPromptsUser(t *testing.T) {
 		}
 
 		c := new(clientMock.Client)
-		c.On("QueryClusters").Return([]db.Cluster{{
+		c.On("QueryBlueprints").Return([]db.Blueprint{{
 			Blueprint: `{"old":"blueprint"}`,
 		}}, nil)
 		c.On("Deploy", "{}").Return(nil)

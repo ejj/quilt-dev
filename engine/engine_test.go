@@ -314,12 +314,12 @@ func selectACL(conn db.Conn) (acl db.ACL, err error) {
 
 func updateStitch(t *testing.T, conn db.Conn, stitch stitch.Stitch, adminKey string) {
 	conn.Txn(db.AllTables...).Run(func(view db.Database) error {
-		cluster, err := view.GetCluster()
+		blueprint, err := view.GetBlueprint()
 		if err != nil {
-			cluster = view.InsertCluster()
+			blueprint = view.InsertBlueprint()
 		}
-		cluster.Blueprint = stitch.String()
-		view.Commit(cluster)
+		blueprint.Blueprint = stitch.String()
+		view.Commit(blueprint)
 		return nil
 	})
 	assert.Nil(t, conn.Txn(db.AllTables...).Run(

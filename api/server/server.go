@@ -121,8 +121,8 @@ func (s server) queryLocal(table db.TableType) (interface{}, error) {
 		return s.conn.SelectFromConnection(nil), nil
 	case db.LabelTable:
 		return s.conn.SelectFromLabel(nil), nil
-	case db.ClusterTable:
-		return s.conn.SelectFromCluster(nil), nil
+	case db.BlueprintTable:
+		return s.conn.SelectFromBlueprint(nil), nil
 	case db.ImageTable:
 		return s.conn.SelectFromImage(nil), nil
 	default:
@@ -134,7 +134,7 @@ func (s server) queryFromDaemon(table db.TableType) (
 	interface{}, error) {
 
 	switch table {
-	case db.MachineTable, db.ClusterTable:
+	case db.MachineTable, db.BlueprintTable:
 		return s.queryLocal(table)
 	}
 
@@ -206,14 +206,14 @@ func (s server) Deploy(cts context.Context, deployReq *pb.DeployRequest) (
 		}
 	}
 
-	err = s.conn.Txn(db.ClusterTable).Run(func(view db.Database) error {
-		cluster, err := view.GetCluster()
+	err = s.conn.Txn(db.BlueprintTable).Run(func(view db.Database) error {
+		blueprint, err := view.GetBlueprint()
 		if err != nil {
-			cluster = view.InsertCluster()
+			blueprint = view.InsertBlueprint()
 		}
 
-		cluster.Blueprint = stitch.String()
-		view.Commit(cluster)
+		blueprint.Blueprint = stitch.String()
+		view.Commit(blueprint)
 		return nil
 	})
 	if err != nil {

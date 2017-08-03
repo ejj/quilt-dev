@@ -63,7 +63,7 @@ func (rCmd *Run) Parse(args []string) error {
 	return nil
 }
 
-var errNoCluster = errors.New("no cluster")
+var errNoBlueprint = errors.New("no blueprint")
 
 var compile = stitch.FromFile
 
@@ -77,12 +77,12 @@ func (rCmd *Run) Run() int {
 	deployment := compiled.String()
 
 	curr, err := getCurrentDeployment(rCmd.client)
-	if err != nil && err != errNoCluster {
+	if err != nil && err != errNoBlueprint {
 		log.WithError(err).Error("Unable to get current deployment.")
 		return 1
 	}
 
-	if !rCmd.force && err != errNoCluster {
+	if !rCmd.force && err != errNoBlueprint {
 		diff, err := diffDeployment(curr.String(), deployment)
 		if err != nil {
 			log.WithError(err).Error("Unable to diff deployments.")
@@ -117,15 +117,15 @@ func (rCmd *Run) Run() int {
 }
 
 func getCurrentDeployment(c client.Client) (stitch.Stitch, error) {
-	clusters, err := c.QueryClusters()
+	blueprints, err := c.QueryBlueprints()
 	if err != nil {
 		return stitch.Stitch{}, err
 	}
-	switch len(clusters) {
+	switch len(blueprints) {
 	case 0:
-		return stitch.Stitch{}, errNoCluster
+		return stitch.Stitch{}, errNoBlueprint
 	case 1:
-		return stitch.FromJSON(clusters[0].Blueprint)
+		return stitch.FromJSON(blueprints[0].Blueprint)
 	default:
 		panic("unreached")
 	}

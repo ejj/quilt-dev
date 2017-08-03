@@ -80,15 +80,15 @@ func RunOnce(conn db.Conn) {
 
 	var blueprint string
 	var machines []db.Machine
-	conn.Txn(db.ClusterTable,
+	conn.Txn(db.BlueprintTable,
 		db.MachineTable).Run(func(view db.Database) error {
 
 		machines = view.SelectFromMachine(func(m db.Machine) bool {
 			return m.PublicIP != "" && m.PrivateIP != ""
 		})
 
-		clst, _ := view.GetCluster()
-		blueprint = clst.Blueprint
+		bp, _ := view.GetBlueprint()
+		blueprint = bp.Blueprint
 
 		return nil
 	})

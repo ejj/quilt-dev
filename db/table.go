@@ -8,8 +8,8 @@ import (
 // TableType represents a table in the database.
 type TableType string
 
-// ClusterTable is the type of the cluster table.
-var ClusterTable = TableType(reflect.TypeOf(Cluster{}).String())
+// BlueprintTable is the type of the blueprint table.
+var BlueprintTable = TableType(reflect.TypeOf(Blueprint{}).String())
 
 // MachineTable is the type of the machine table.
 var MachineTable = TableType(reflect.TypeOf(Machine{}).String())
@@ -44,7 +44,7 @@ var HostnameTable = TableType(reflect.TypeOf(Hostname{}).String())
 // AllTables is a slice of all the db TableTypes. It is used primarily for tests,
 // where there is no reason to put lots of thought into which tables a Transaction
 // should use.
-var AllTables = []TableType{ClusterTable, MachineTable, ContainerTable, MinionTable,
+var AllTables = []TableType{BlueprintTable, MachineTable, ContainerTable, MinionTable,
 	ConnectionTable, LabelTable, EtcdTable, PlacementTable, ACLTable, ImageTable,
 	HostnameTable}
 

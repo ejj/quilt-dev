@@ -42,8 +42,8 @@ type Client interface {
 	// QueryLabels retrieves the label information tracked by the Quilt daemon.
 	QueryLabels() ([]db.Label, error)
 
-	// QueryClusters retrieves cluster information tracked by the Quilt daemon.
-	QueryClusters() ([]db.Cluster, error)
+	// QueryBlueprints retrieves blueprint information tracked by the Quilt daemon.
+	QueryBlueprints() ([]db.Blueprint, error)
 
 	// QueryCounters retrieves the debugging counters tracked with the Quilt daemon.
 	QueryCounters() ([]pb.Counter, error)
@@ -135,12 +135,12 @@ func query(pbClient pb.APIClient, table db.TableType) (interface{}, error) {
 			return nil, err
 		}
 		return connections, nil
-	case db.ClusterTable:
-		var clusters []db.Cluster
-		if err := json.Unmarshal(replyBytes, &clusters); err != nil {
+	case db.BlueprintTable:
+		var blueprints []db.Blueprint
+		if err := json.Unmarshal(replyBytes, &blueprints); err != nil {
 			return nil, err
 		}
-		return clusters, nil
+		return blueprints, nil
 	case db.ImageTable:
 		var images []db.Image
 		if err := json.Unmarshal(replyBytes, &images); err != nil {
@@ -207,14 +207,14 @@ func (c clientImpl) QueryLabels() ([]db.Label, error) {
 	return rows.([]db.Label), nil
 }
 
-// QueryClusters retrieves the cluster information tracked by the Quilt daemon.
-func (c clientImpl) QueryClusters() ([]db.Cluster, error) {
-	rows, err := query(c.pbClient, db.ClusterTable)
+// QueryBlueprints retrieves the blueprint information tracked by the Quilt daemon.
+func (c clientImpl) QueryBlueprints() ([]db.Blueprint, error) {
+	rows, err := query(c.pbClient, db.BlueprintTable)
 	if err != nil {
 		return nil, err
 	}
 
-	return rows.([]db.Cluster), nil
+	return rows.([]db.Blueprint), nil
 }
 
 // QueryCounters retrieves the debugging counters tracked with the Quilt daemon.

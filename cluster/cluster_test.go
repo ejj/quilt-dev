@@ -769,7 +769,7 @@ func TestUpdateCluster(t *testing.T) {
 func TestMultiRegionDeploy(t *testing.T) {
 	clst := newTestCluster("ns")
 	clst.conn.Txn(db.MachineTable,
-		db.ClusterTable).Run(func(view db.Database) error {
+		db.BlueprintTable).Run(func(view db.Database) error {
 
 		for _, p := range allProviders {
 			for _, r := range validRegions(p) {
@@ -781,7 +781,7 @@ func TestMultiRegionDeploy(t *testing.T) {
 			}
 		}
 
-		c := view.InsertCluster()
+		c := view.InsertBlueprint()
 		c.Namespace = "ns"
 		view.Commit(c)
 		return nil
@@ -854,13 +854,13 @@ func TestGetError(t *testing.T) {
 
 func setNamespace(conn db.Conn, ns string) {
 	conn.Txn(db.AllTables...).Run(func(view db.Database) error {
-		clst, err := view.GetCluster()
+		bp, err := view.GetBlueprint()
 		if err != nil {
-			clst = view.InsertCluster()
+			bp = view.InsertBlueprint()
 		}
 
-		clst.Namespace = ns
-		view.Commit(clst)
+		bp.Namespace = ns
+		view.Commit(bp)
 		return nil
 	})
 }

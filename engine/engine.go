@@ -16,10 +16,11 @@ var defaultDiskSize = 32
 
 var c = counter.New("Engine")
 
-// Run updates the database in response to stitch changes in the cluster table.
+// Run updates the database in response to stitch changes in the blueprint table.
 func Run(conn db.Conn, adminKey string) {
-	for range conn.TriggerTick(30, db.ClusterTable, db.MachineTable, db.ACLTable).C {
-		conn.Txn(db.ACLTable, db.ClusterTable, db.MachineTable).Run(
+	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable,
+		db.ACLTable).C {
+		conn.Txn(db.ACLTable, db.BlueprintTable, db.MachineTable).Run(
 			func(view db.Database) error {
 				return updateTxn(view, adminKey)
 			})
@@ -29,18 +30,18 @@ func Run(conn db.Conn, adminKey string) {
 func updateTxn(view db.Database, adminKey string) error {
 	c.Inc("Update")
 
-	cluster, err := view.GetCluster()
+	blueprint, err := view.GetBlueprint()
 	if err != nil {
 		return err
 	}
 
-	stitch, err := stitch.FromJSON(cluster.Blueprint)
+	stitch, err := stitch.FromJSON(blueprint.Blueprint)
 	if err != nil {
 		return err
 	}
 
-	cluster.Namespace = stitch.Namespace
-	view.Commit(cluster)
+	blueprint.Namespace = stitch.Namespace
+	view.Commit(blueprint)
 
 	machineTxn(view, stitch, adminKey)
 	aclTxn(view, stitch)

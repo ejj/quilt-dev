@@ -206,9 +206,9 @@ func TestDeploy(t *testing.T) {
 
 	var blueprint string
 	conn.Txn(db.AllTables...).Run(func(view db.Database) error {
-		clst, err := view.GetCluster()
+		bp, err := view.GetBlueprint()
 		assert.NoError(t, err)
-		blueprint = clst.Blueprint
+		blueprint = bp.Blueprint
 		return nil
 	})
 
@@ -245,9 +245,9 @@ func TestVagrantDeployment(t *testing.T) {
 
 	var blueprint string
 	conn.Txn(db.AllTables...).Run(func(view db.Database) error {
-		clst, err := view.GetCluster()
+		bp, err := view.GetBlueprint()
 		assert.NoError(t, err)
-		blueprint = clst.Blueprint
+		blueprint = bp.Blueprint
 		return nil
 	})
 

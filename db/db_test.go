@@ -200,7 +200,7 @@ func TestAllTablesNoPanic(t *testing.T) {
 		view.InsertLabel()
 		view.InsertMinion()
 		view.InsertMachine()
-		view.InsertCluster()
+		view.InsertBlueprint()
 		view.InsertPlacement()
 		view.InsertContainer()
 		view.InsertConnection()
@@ -218,10 +218,10 @@ func TestTxnNoPanic(t *testing.T) {
 		}
 	}()
 
-	tr := New().Txn(MachineTable, ClusterTable)
+	tr := New().Txn(MachineTable, BlueprintTable)
 	tr.Run(func(view Database) error {
 		view.InsertMachine()
-		view.InsertCluster()
+		view.InsertBlueprint()
 
 		return nil
 	})
@@ -235,7 +235,7 @@ func TestTxnPanic(t *testing.T) {
 		}
 	}()
 
-	tr := New().Txn(MachineTable, ClusterTable)
+	tr := New().Txn(MachineTable, BlueprintTable)
 	tr.Run(func(view Database) error {
 		view.InsertEtcd()
 
@@ -407,8 +407,8 @@ func TestTrigger(t *testing.T) {
 
 	mt := conn.Trigger(MachineTable)
 	mt2 := conn.Trigger(MachineTable)
-	ct := conn.Trigger(ClusterTable)
-	ct2 := conn.Trigger(ClusterTable)
+	ct := conn.Trigger(BlueprintTable)
+	ct2 := conn.Trigger(BlueprintTable)
 
 	triggerNoRecv(t, mt)
 	triggerNoRecv(t, mt2)
@@ -594,21 +594,21 @@ func TestSliceHelpers(t *testing.T) {
 	assert.Equal(t, conns[0], ConnectionSlice(conns).Get(0))
 }
 
-func TestGetClusterNamespace(t *testing.T) {
+func TestGetBlueprintNamespace(t *testing.T) {
 	conn := New()
 
-	ns, err := conn.GetClusterNamespace()
+	ns, err := conn.GetBlueprintNamespace()
 	assert.NotNil(t, err)
 	assert.Exactly(t, ns, "")
 
 	conn.Txn(AllTables...).Run(func(view Database) error {
-		clst := view.InsertCluster()
-		clst.Namespace = "test"
-		view.Commit(clst)
+		bp := view.InsertBlueprint()
+		bp.Namespace = "test"
+		view.Commit(bp)
 		return nil
 	})
 
-	ns, err = conn.GetClusterNamespace()
+	ns, err = conn.GetBlueprintNamespace()
 	assert.NoError(t, err)
 	assert.Exactly(t, ns, "test")
 }

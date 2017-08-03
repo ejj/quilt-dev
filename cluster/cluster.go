@@ -70,7 +70,8 @@ var sleep = time.Sleep
 func Run(conn db.Conn, creds connection.Credentials, minionTLSDir string) {
 	go updateMachineStatuses(conn)
 	var clst *cluster
-	for range conn.TriggerTick(30, db.ClusterTable, db.MachineTable, db.ACLTable).C {
+	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable,
+		db.ACLTable).C {
 		c.Inc("Run")
 		clst = updateCluster(conn, clst, creds, minionTLSDir)
 
@@ -82,7 +83,7 @@ func Run(conn db.Conn, creds connection.Credentials, minionTLSDir string) {
 
 func updateCluster(conn db.Conn, clst *cluster, creds connection.Credentials,
 	minionTLSDir string) *cluster {
-	namespace, err := conn.GetClusterNamespace()
+	namespace, err := conn.GetBlueprintNamespace()
 	if err != nil {
 		return clst
 	}
@@ -251,9 +252,9 @@ func (clst cluster) join() (joinResult, error) {
 		return res, err
 	}
 
-	err = clst.conn.Txn(db.ACLTable, db.ClusterTable,
+	err = clst.conn.Txn(db.ACLTable, db.BlueprintTable,
 		db.MachineTable).Run(func(view db.Database) error {
-		namespace, err := view.GetClusterNamespace()
+		namespace, err := view.GetBlueprintNamespace()
 		if err != nil {
 			log.WithError(err).Error("Failed to get namespace")
 			return err

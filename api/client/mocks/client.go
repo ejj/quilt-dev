@@ -39,16 +39,16 @@ func (_m *Client) Deploy(deployment string) error {
 	return r0
 }
 
-// QueryClusters provides a mock function with given fields:
-func (_m *Client) QueryClusters() ([]db.Cluster, error) {
+// QueryBlueprints provides a mock function with given fields:
+func (_m *Client) QueryBlueprints() ([]db.Blueprint, error) {
 	ret := _m.Called()
 
-	var r0 []db.Cluster
-	if rf, ok := ret.Get(0).(func() []db.Cluster); ok {
+	var r0 []db.Blueprint
+	if rf, ok := ret.Get(0).(func() []db.Blueprint); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]db.Cluster)
+			r0 = ret.Get(0).([]db.Blueprint)
 		}
 	}
 

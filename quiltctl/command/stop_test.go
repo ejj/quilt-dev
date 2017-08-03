@@ -14,7 +14,7 @@ func TestStopNamespaceDefault(t *testing.T) {
 	t.Parallel()
 
 	c := new(clientMock.Client)
-	c.On("QueryClusters").Once().Return([]db.Cluster{{
+	c.On("QueryBlueprints").Once().Return([]db.Blueprint{{
 		Blueprint: `{"namespace": "testSpace"}`}}, nil)
 	c.On("Deploy", mock.Anything).Return(nil)
 
@@ -24,7 +24,7 @@ func TestStopNamespaceDefault(t *testing.T) {
 
 	c.AssertCalled(t, "Deploy", stitch.Stitch{Namespace: "testSpace"}.String())
 
-	c.On("QueryClusters").Return(nil, nil)
+	c.On("QueryBlueprints").Return(nil, nil)
 	assert.Equal(t, 1, stopCmd.Run(),
 		"can't retrieve namespace if no cluster is deployed")
 }
@@ -33,7 +33,7 @@ func TestStopNamespace(t *testing.T) {
 	t.Parallel()
 
 	c := &clientMock.Client{}
-	c.On("QueryClusters").Return(nil, nil)
+	c.On("QueryBlueprints").Return(nil, nil)
 	c.On("Deploy", mock.Anything).Return(nil)
 
 	stopCmd := NewStopCommand()
@@ -48,7 +48,7 @@ func TestStopContainers(t *testing.T) {
 	t.Parallel()
 
 	c := &clientMock.Client{}
-	c.On("QueryClusters").Return([]db.Cluster{{
+	c.On("QueryBlueprints").Return([]db.Blueprint{{
 		Blueprint: `{"namespace": "testSpace", "machines": ` +
 			`[{"provider": "Amazon"}, {"provider": "Google"}]}`,
 	}}, nil)
