@@ -118,7 +118,7 @@ func (prvdr *Provider) Boot(bootSet []machine.Machine) error {
 	for _, m := range bootSet {
 		br := bootReq{
 			groupID:     groupID,
-			cfg:         cfg.Ubuntu(m.CfgOpts),
+			cfg:         cfg.Ubuntu(m, ""),
 			size:        m.Size,
 			diskSize:    m.DiskSize,
 			preemptible: m.Preemptible,

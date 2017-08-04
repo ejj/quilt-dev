@@ -66,8 +66,7 @@ func (prvdr Provider) Boot(bootSet []machine.Machine) error {
 func bootMachine(m machine.Machine) error {
 	id := uuid.NewV4().String()
 
-	m.CfgOpts.MinionOpts.InboundPubIntf = inboundPublicInterface
-	err := initMachine(cfg.Ubuntu(m.CfgOpts), m.Size, id)
+	err := initMachine(cfg.Ubuntu(m, inboundPublicInterface), m.Size, id)
 	if err == nil {
 		err = up(id)
 	}

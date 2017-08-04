@@ -150,7 +150,7 @@ func (prvdr *Provider) Boot(bootSet []machine.Machine) error {
 		}
 
 		name := "quilt-" + uuid.NewV4().String()
-		_, err := prvdr.instanceNew(name, m.Size, cfg.Ubuntu(m.CfgOpts))
+		_, err := prvdr.instanceNew(name, m.Size, cfg.Ubuntu(m, ""))
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err,

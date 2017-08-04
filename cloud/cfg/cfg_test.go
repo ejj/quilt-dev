@@ -3,6 +3,7 @@ package cfg
 import (
 	"testing"
 
+	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 
 	log "github.com/Sirupsen/logrus"
@@ -14,10 +15,10 @@ func TestCloudConfig(t *testing.T) {
 
 	log.SetLevel(log.InfoLevel)
 	ver = "master"
-	res := Ubuntu(Options{
-		SSHKeys:    []string{"a", "b"},
-		MinionOpts: MinionOptions{Role: db.Master},
-	})
+	res := Ubuntu(machine.Machine{
+		SSHKeys: []string{"a", "b"},
+		Role:    db.Master,
+	}, "")
 	exp := "(quilt/quilt:master) (a\nb) (--role \"Master\") (info) ()"
 	if res != exp {
 		t.Errorf("res: %s\nexp: %s", res, exp)
@@ -25,12 +26,13 @@ func TestCloudConfig(t *testing.T) {
 
 	log.SetLevel(log.DebugLevel)
 	ver = "1.2.3"
-	res = Ubuntu(Options{
-		SSHKeys:    []string{"a", "b"},
-		MinionOpts: MinionOptions{Role: db.Worker, TLSDir: "dir"},
-	})
-	exp = "(quilt/quilt:1.2.3) (a\nb) (--role \"Worker\" " +
-		"--tls-dir \"dir\") (debug) (-v dir:dir:ro)"
+	MinionTLSDir = "dir"
+	res = Ubuntu(machine.Machine{
+		SSHKeys: []string{"a", "b"},
+		Role:    db.Worker,
+	}, "ib")
+	exp = "(quilt/quilt:1.2.3) (a\nb) (--role \"Worker\" --inbound-pub-intf \"ib\"" +
+		" --tls-dir \"dir\") (debug) (-v dir:dir:ro)"
 	if res != exp {
 		t.Errorf("res: %s\nexp: %s", res, exp)
 	}

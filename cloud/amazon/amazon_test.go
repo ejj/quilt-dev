@@ -349,38 +349,35 @@ func TestBoot(t *testing.T) {
 	amazonProvider := newAmazon(testNamespace, DefaultRegion)
 	amazonProvider.Client = mc
 
-	cfgOpts := cfg.Options{
-		MinionOpts: cfg.MinionOptions{Role: db.Master},
-	}
 	err := amazonProvider.Boot([]machine.Machine{
 		{
+			Role:        db.Master,
 			Size:        "m4.large",
 			DiskSize:    32,
-			CfgOpts:     CfgOpts,
 			Preemptible: true,
 		},
 		{
+			Role:        db.Master,
 			Size:        "m4.large",
 			DiskSize:    32,
-			CfgOpts:     CfgOpts,
 			Preemptible: true,
 		},
 		{
+			Role:        db.Master,
 			Size:        "m4.large",
 			DiskSize:    32,
-			CfgOpts:     CfgOpts,
 			Preemptible: false,
 		},
 		{
+			Role:        db.Master,
 			Size:        "m4.large",
 			DiskSize:    32,
-			CfgOpts:     CfgOpts,
 			Preemptible: false,
 		},
 	})
 	assert.Nil(t, err)
 
-	cfg := cfg.Ubuntu(cfgOpts)
+	cfg := cfg.Ubuntu(machine.Machine{Role: db.Master}, "")
 	mc.AssertCalled(t, "RequestSpotInstances", spotPrice, int64(2),
 		&ec2.RequestSpotLaunchSpecification{
 			ImageId:      aws.String(amis[DefaultRegion]),

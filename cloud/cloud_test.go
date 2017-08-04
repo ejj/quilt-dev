@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
@@ -72,8 +71,8 @@ func (p *fakeProvider) Boot(bootSet []machine.Machine) error {
 		// We simulate this by setting the role of the machine returned by
 		// `List()` to be None, and only return the correct role in
 		// `getMachineRole`.
-		p.roles[toBoot.PublicIP] = toBoot.CfgOpts.MinionOpts.Role
-		toBoot.CfgOpts.MinionOpts.Role = db.None
+		p.roles[toBoot.PublicIP] = toBoot.Role
+		toBoot.Role = db.None
 
 		p.machines[idStr] = toBoot
 	}
@@ -107,7 +106,7 @@ func (p *fakeProvider) UpdateFloatingIPs(machines []machine.Machine) error {
 func newTestCloud(namespace string) *cloud {
 	sleep = func(t time.Duration) {}
 	mock()
-	return newCloud(db.New(), namespace, "")
+	return newCloud(db.New(), namespace)
 }
 
 func TestPanicBadProvider(t *testing.T) {
@@ -119,7 +118,7 @@ func TestPanicBadProvider(t *testing.T) {
 	}()
 	allProviders = []db.Provider{FakeAmazon}
 	conn := db.New()
-	newCloud(conn, "test", "")
+	newCloud(conn, "test")
 }
 
 func TestSyncDB(t *testing.T) {
@@ -406,17 +405,6 @@ func TestSync(t *testing.T) {
 		providerInst.clearLogs()
 	}
 
-	mastercfg := cfg.Options{
-		MinionOpts: cfg.MinionOptions{
-			Role: db.Master,
-		},
-	}
-	workercfg := cfg.Options{
-		MinionOpts: cfg.MinionOptions{
-			Role: db.Worker,
-		},
-	}
-
 	// Test initial boot
 	clst := newTestCloud("ns")
 	setNamespace(clst.conn, "ns")
@@ -432,7 +420,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeAmazon, testRegion,
 		assertion{boot: []machine.Machine{
-			{Size: "m4.large", CfgOpts: mastercfg},
+			{Size: "m4.large", Role: db.Master},
 		}})
 
 	// Test adding a machine with the same provider
@@ -448,7 +436,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeAmazon, testRegion,
 		assertion{boot: []machine.Machine{
-			{Size: "m4.xlarge", CfgOpts: mastercfg},
+			{Size: "m4.xlarge", Role: db.Master},
 		}})
 
 	// Test adding a machine with a different provider
@@ -464,7 +452,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeVagrant, testRegion,
 		assertion{boot: []machine.Machine{
-			{Size: "vagrant.large", CfgOpts: mastercfg},
+			{Size: "vagrant.large", Role: db.Master},
 		}})
 
 	// Test removing a machine
@@ -494,7 +482,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeAmazon, testRegion, assertion{
 		boot: []machine.Machine{
-			{Size: "m4.large", CfgOpts: mastercfg},
+			{Size: "m4.large", Role: db.Master},
 		},
 	})
 
@@ -562,7 +550,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeAmazon, testRegion, assertion{
 		boot: []machine.Machine{
-			{Size: "m4.xlarge", CfgOpts: workercfg},
+			{Size: "m4.xlarge", Role: db.Worker},
 		},
 		stop: []string{toRemove.CloudID},
 	})
@@ -581,7 +569,7 @@ func TestSync(t *testing.T) {
 
 	checkSync(clst, FakeAmazon, testRegion, assertion{
 		boot: []machine.Machine{
-			{Size: "m4.xlarge", CfgOpts: mastercfg},
+			{Size: "m4.xlarge", Role: db.Master},
 		},
 	})
 
@@ -603,44 +591,10 @@ func TestSync(t *testing.T) {
 
 	checkSync(clst, FakeAmazon, testRegion, assertion{
 		boot: []machine.Machine{
-			{Size: "m4.xlarge", CfgOpts: workercfg},
+			{Size: "m4.xlarge", Role: db.Worker},
 		},
 		stop: []string{toRemove.CloudID},
 	})
-}
-
-func TestBootTLSDir(t *testing.T) {
-	t.Parallel()
-
-	prvdr := fakeProvider{
-		machines: make(map[string]machine.Machine),
-		roles:    make(map[string]db.Role),
-	}
-
-	testTLSDir := "tlsdir"
-	clst := cloud{
-		conn:         db.New(),
-		minionTLSDir: testTLSDir,
-		providers: map[launchLoc]provider{
-			{FakeAmazon, testRegion}: &prvdr,
-		},
-	}
-	clst.boot([]db.Machine{
-		{
-			Provider: FakeAmazon,
-			Region:   testRegion,
-		},
-	})
-
-	assert.Equal(t, []machine.Machine{
-		{
-			CfgOpts: cfg.Options{
-				MinionOpts: cfg.MinionOptions{
-					TLSDir: testTLSDir,
-				},
-			},
-		},
-	}, prvdr.bootRequests)
 }
 
 func TestACLs(t *testing.T) {
@@ -696,11 +650,11 @@ func TestACLs(t *testing.T) {
 func TestUpdateCloud(t *testing.T) {
 	conn := db.New()
 
-	clst := updateCloud(conn, nil, nil, "")
+	clst := updateCloud(conn, nil, nil)
 	assert.Nil(t, clst)
 
 	setNamespace(conn, "ns1")
-	clst = updateCloud(conn, clst, nil, "")
+	clst = updateCloud(conn, clst, nil)
 	assert.NotNil(t, clst)
 	assert.Equal(t, "ns1", clst.namespace)
 
@@ -722,7 +676,7 @@ func TestUpdateCloud(t *testing.T) {
 	oldClst := clst
 	oldAmzn := amzn
 
-	clst = updateCloud(conn, clst, nil, "")
+	clst = updateCloud(conn, clst, nil)
 	assert.NotNil(t, clst)
 
 	// Pointers shouldn't have changed
@@ -747,7 +701,7 @@ func TestUpdateCloud(t *testing.T) {
 	oldClst = clst
 	oldAmzn = amzn
 	setNamespace(conn, "ns2")
-	clst = updateCloud(conn, clst, nil, "")
+	clst = updateCloud(conn, clst, nil)
 	assert.NotNil(t, clst)
 
 	// Pointers should have changed

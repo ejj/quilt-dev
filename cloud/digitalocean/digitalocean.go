@@ -167,7 +167,7 @@ func (prvdr Provider) Boot(bootSet []machine.Machine) error {
 
 // Creates a new machine, and waits for the machine to become active.
 func (prvdr Provider) createAndAttach(m machine.Machine) error {
-	cloudConfig := cfg.Ubuntu(m.CfgOpts)
+	cloudConfig := cfg.Ubuntu(m, "")
 	createReq := &godo.DropletCreateRequest{
 		Name:              prvdr.namespace,
 		Region:            prvdr.region,

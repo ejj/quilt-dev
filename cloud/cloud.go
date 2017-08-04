@@ -55,11 +55,6 @@ type cloud struct {
 	namespace string
 	conn      db.Conn
 	providers map[launchLoc]provider
-
-	// The directory from which minions will read their TLS certificates when
-	// they boot. This should match the location to which the daemon is
-	// installing certificates.
-	minionTLSDir string
 }
 
 var myIP = util.MyIP
@@ -68,12 +63,14 @@ var sleep = time.Sleep
 // Run continually checks 'conn' for cloud changes and recreates the cloud as
 // needed.
 func Run(conn db.Conn, creds connection.Credentials, minionTLSDir string) {
+	cfg.MinionTLSDir = minionTLSDir
+
 	go updateMachineStatuses(conn)
 	var cld *cloud
 	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable,
 		db.ACLTable).C {
 		c.Inc("Run")
-		cld = updateCloud(conn, cld, creds, minionTLSDir)
+		cld = updateCloud(conn, cld, creds)
 
 		// Somewhat of a crude rate-limit of once every five seconds to avoid
 		// stressing out the cloud providers with too many API calls.
@@ -81,15 +78,14 @@ func Run(conn db.Conn, creds connection.Credentials, minionTLSDir string) {
 	}
 }
 
-func updateCloud(conn db.Conn, cld *cloud, creds connection.Credentials,
-	minionTLSDir string) *cloud {
+func updateCloud(conn db.Conn, cld *cloud, creds connection.Credentials) *cloud {
 	namespace, err := conn.GetBlueprintNamespace()
 	if err != nil {
 		return cld
 	}
 
 	if cld == nil || cld.namespace != namespace {
-		cld = newCloud(conn, namespace, minionTLSDir)
+		cld = newCloud(conn, namespace)
 		cld.runOnce()
 		foreman.Init(cld.conn, creds)
 	}
@@ -100,12 +96,11 @@ func updateCloud(conn db.Conn, cld *cloud, creds connection.Credentials,
 	return cld
 }
 
-func newCloud(conn db.Conn, namespace string, minionTLSDir string) *cloud {
+func newCloud(conn db.Conn, namespace string) *cloud {
 	cld := &cloud{
-		namespace:    namespace,
-		conn:         conn,
-		providers:    make(map[launchLoc]provider),
-		minionTLSDir: minionTLSDir,
+		namespace: namespace,
+		conn:      conn,
+		providers: make(map[launchLoc]provider),
 	}
 
 	for _, p := range allProviders {
@@ -165,13 +160,8 @@ func (cld cloud) boot(machines []db.Machine) {
 				Size:        m.Size,
 				DiskSize:    m.DiskSize,
 				Preemptible: m.Preemptible,
-				CfgOpts: cfg.Options{
-					SSHKeys: m.SSHKeys,
-					MinionOpts: cfg.MinionOptions{
-						Role:   m.Role,
-						TLSDir: cld.minionTLSDir,
-					},
-				},
+				SSHKeys:     m.SSHKeys,
+				Role:        m.Role,
 			},
 			provider: m.Provider,
 			region:   m.Region,
