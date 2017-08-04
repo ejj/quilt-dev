@@ -3,9 +3,8 @@ package vagrant
 import (
 	"testing"
 
+	"github.com/quilt/quilt/db"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/quilt/quilt/cloud/machine"
 )
 
 func TestSetACLs(t *testing.T) {
@@ -14,6 +13,6 @@ func TestSetACLs(t *testing.T) {
 }
 
 func TestPreemptibleError(t *testing.T) {
-	err := Provider{}.Boot([]machine.Machine{{Preemptible: true}})
+	err := Provider{}.Boot([]db.Machine{{Preemptible: true}})
 	assert.EqualError(t, err, "vagrant does not support preemptible instances")
 }

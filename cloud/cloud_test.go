@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/stretchr/testify/assert"
@@ -19,14 +18,14 @@ var testRegion = "Fake region"
 
 type fakeProvider struct {
 	namespace   string
-	machines    map[string]machine.Machine
+	machines    map[string]db.Machine
 	roles       map[string]db.Role
 	idCounter   int
 	cloudConfig string
 
-	bootRequests []machine.Machine
+	bootRequests []db.Machine
 	stopRequests []string
-	updatedIPs   []machine.Machine
+	updatedIPs   []db.Machine
 	aclRequests  []acl.ACL
 
 	listError error
@@ -43,19 +42,19 @@ func (p *fakeProvider) clearLogs() {
 	p.updatedIPs = nil
 }
 
-func (p *fakeProvider) List() ([]machine.Machine, error) {
+func (p *fakeProvider) List() ([]db.Machine, error) {
 	if p.listError != nil {
 		return nil, p.listError
 	}
 
-	var machines []machine.Machine
+	var machines []db.Machine
 	for _, machine := range p.machines {
 		machines = append(machines, machine)
 	}
 	return machines, nil
 }
 
-func (p *fakeProvider) Boot(bootSet []machine.Machine) error {
+func (p *fakeProvider) Boot(bootSet []db.Machine) error {
 	for _, toBoot := range bootSet {
 		// Record the boot request before we mutate it with implementation
 		// details of our fakeProvider.
@@ -63,7 +62,7 @@ func (p *fakeProvider) Boot(bootSet []machine.Machine) error {
 
 		p.idCounter++
 		idStr := strconv.Itoa(p.idCounter)
-		toBoot.ID = idStr
+		toBoot.CloudID = idStr
 		toBoot.PublicIP = idStr
 
 		// A machine's role is `None` until the minion boots, at which
@@ -80,10 +79,10 @@ func (p *fakeProvider) Boot(bootSet []machine.Machine) error {
 	return nil
 }
 
-func (p *fakeProvider) Stop(machines []machine.Machine) error {
+func (p *fakeProvider) Stop(machines []db.Machine) error {
 	for _, machine := range machines {
-		delete(p.machines, machine.ID)
-		p.stopRequests = append(p.stopRequests, machine.ID)
+		delete(p.machines, machine.CloudID)
+		p.stopRequests = append(p.stopRequests, machine.CloudID)
 	}
 	return nil
 }
@@ -93,11 +92,11 @@ func (p *fakeProvider) SetACLs(acls []acl.ACL) error {
 	return nil
 }
 
-func (p *fakeProvider) UpdateFloatingIPs(machines []machine.Machine) error {
+func (p *fakeProvider) UpdateFloatingIPs(machines []db.Machine) error {
 	for _, desired := range machines {
-		curr := p.machines[desired.ID]
+		curr := p.machines[desired.CloudID]
 		curr.FloatingIP = desired.FloatingIP
-		p.machines[desired.ID] = curr
+		p.machines[desired.CloudID] = curr
 	}
 	p.updatedIPs = append(p.updatedIPs, machines...)
 	return nil
@@ -140,7 +139,7 @@ func TestSyncDB(t *testing.T) {
 	cmLarge := joinMachine{
 		provider: FakeAmazon,
 		region:   testRegion,
-		Machine:  machine.Machine{Size: "m4.large"},
+		Machine:  db.Machine{Size: "m4.large"},
 	}
 
 	dbMaster := db.Machine{Provider: FakeAmazon, Role: db.Master}
@@ -148,10 +147,10 @@ func TestSyncDB(t *testing.T) {
 	dbWorker := db.Machine{Provider: FakeAmazon, Role: db.Worker}
 	cmWorkerList := joinMachine{provider: FakeAmazon, role: db.Worker}
 
-	cmNoIP := joinMachine{provider: FakeAmazon, Machine: machine.Machine{ID: "id"}}
+	cmNoIP := joinMachine{provider: FakeAmazon, Machine: db.Machine{CloudID: "id"}}
 	cmWithIP := joinMachine{
 		provider: FakeAmazon,
-		Machine:  machine.Machine{ID: "id", FloatingIP: "ip"},
+		Machine:  db.Machine{CloudID: "id", FloatingIP: "ip"},
 	}
 	dbNoIP := db.Machine{Provider: FakeAmazon, CloudID: "id"}
 	dbWithIP := db.Machine{Provider: FakeAmazon, CloudID: "id", FloatingIP: "ip"}
@@ -201,17 +200,17 @@ func TestSyncDB(t *testing.T) {
 	// Test replace Floating IP
 	cNewIP := joinMachine{
 		provider: FakeAmazon,
-		Machine:  machine.Machine{ID: "id", FloatingIP: "ip^"},
+		Machine:  db.Machine{CloudID: "id", FloatingIP: "ip^"},
 	}
 	checkSyncDB([]joinMachine{cNewIP}, []db.Machine{dbWithIP}, syncDBResult{
 		updateIPs: []joinMachine{cmWithIP},
 	})
 
 	// Test bad disk size
-	checkSyncDB([]joinMachine{{Machine: machine.Machine{DiskSize: 3}}},
+	checkSyncDB([]joinMachine{{Machine: db.Machine{DiskSize: 3}}},
 		[]db.Machine{{DiskSize: 4}},
 		syncDBResult{
-			stop: []joinMachine{{Machine: machine.Machine{DiskSize: 3}}},
+			stop: []joinMachine{{Machine: db.Machine{DiskSize: 3}}},
 			boot: []db.Machine{{DiskSize: 4}},
 		})
 
@@ -227,12 +226,12 @@ func TestSyncDB(t *testing.T) {
 	})
 
 	// Test reserved instances.
-	checkSyncDB([]joinMachine{{Machine: machine.Machine{Preemptible: true}}},
+	checkSyncDB([]joinMachine{{Machine: db.Machine{Preemptible: true}}},
 		[]db.Machine{{Preemptible: false}},
 		syncDBResult{
 			boot: []db.Machine{{Preemptible: false}},
 			stop: []joinMachine{
-				{Machine: machine.Machine{Preemptible: true}},
+				{Machine: db.Machine{Preemptible: true}},
 			},
 		})
 
@@ -252,11 +251,11 @@ func TestSyncDB(t *testing.T) {
 	dbw3 := db.Machine{Provider: FakeAmazon, Role: db.Worker, PublicIP: "w3"}
 
 	mw1 := joinMachine{provider: FakeAmazon, role: db.Worker,
-		Machine: machine.Machine{ID: "mw1", PublicIP: "w1"}}
+		Machine: db.Machine{CloudID: "mw1", PublicIP: "w1"}}
 	mw2 := joinMachine{provider: FakeAmazon, role: db.Worker,
-		Machine: machine.Machine{ID: "mw2", PublicIP: "w2"}}
+		Machine: db.Machine{CloudID: "mw2", PublicIP: "w2"}}
 	mw3 := joinMachine{provider: FakeAmazon, role: db.Worker,
-		Machine: machine.Machine{ID: "mw3", PublicIP: "w3"}}
+		Machine: db.Machine{CloudID: "mw3", PublicIP: "w3"}}
 
 	pair1 := join.Pair{L: dbw1, R: mw1}
 	pair2 := join.Pair{L: dbw2, R: mw2}
@@ -280,9 +279,9 @@ func TestSyncDB(t *testing.T) {
 		FloatingIP: "float"}
 
 	cmf1 := joinMachine{provider: FakeAmazon,
-		Machine: machine.Machine{PublicIP: "worker", ID: "worker"}}
+		Machine: db.Machine{PublicIP: "worker", CloudID: "worker"}}
 	cmf2 := joinMachine{provider: FakeAmazon,
-		Machine: machine.Machine{PublicIP: "master", ID: "master"}}
+		Machine: db.Machine{PublicIP: "master", CloudID: "master"}}
 
 	// No roles, CloudIDs not assigned, so nothing should happen
 	checkSyncDB([]joinMachine{cmf1, cmf2},
@@ -296,7 +295,7 @@ func TestSyncDB(t *testing.T) {
 		[]db.Machine{dbf1, dbf2},
 		syncDBResult{})
 
-	dbf2.CloudID = cmf1.ID
+	dbf2.CloudID = cmf1.CloudID
 	cmf2.role = db.Master
 
 	// Now that CloudID of machine with FloatingIP has been assigned,
@@ -308,9 +307,9 @@ func TestSyncDB(t *testing.T) {
 				{
 					provider: FakeAmazon,
 					role:     db.Worker,
-					Machine: machine.Machine{
+					Machine: db.Machine{
 						PublicIP:   "worker",
-						ID:         "worker",
+						CloudID:    "worker",
 						FloatingIP: "float",
 					},
 				},
@@ -325,11 +324,11 @@ func TestSyncDB(t *testing.T) {
 		FloatingIP: "flip2"}
 
 	m2 := joinMachine{provider: FakeAmazon,
-		Machine: machine.Machine{PublicIP: "mIP", ID: "m2"}}
+		Machine: db.Machine{PublicIP: "mIP", CloudID: "m2"}}
 	m3 := joinMachine{provider: FakeAmazon,
-		Machine: machine.Machine{PublicIP: "wIP1", ID: "m3"}}
+		Machine: db.Machine{PublicIP: "wIP1", CloudID: "m3"}}
 	m4 := joinMachine{provider: FakeAmazon,
-		Machine: machine.Machine{PublicIP: "wIP2", ID: "m4"}}
+		Machine: db.Machine{PublicIP: "wIP2", CloudID: "m4"}}
 
 	m2.role = db.Worker
 	m3.role = db.Master
@@ -340,9 +339,9 @@ func TestSyncDB(t *testing.T) {
 		[]db.Machine{dbm2, dbm3, dbm4},
 		syncDBResult{})
 
-	dbm2.CloudID = m3.ID
-	dbm3.CloudID = m2.ID
-	dbm4.CloudID = m4.ID
+	dbm2.CloudID = m3.CloudID
+	dbm3.CloudID = m2.CloudID
+	dbm4.CloudID = m4.CloudID
 
 	// CloudIDs are now assigned, so time to update floating IPs
 	checkSyncDB([]joinMachine{m2, m3, m4},
@@ -352,18 +351,18 @@ func TestSyncDB(t *testing.T) {
 				{
 					provider: FakeAmazon,
 					role:     db.Worker,
-					Machine: machine.Machine{
+					Machine: db.Machine{
 						PublicIP:   "mIP",
-						ID:         "m2",
+						CloudID:    "m2",
 						FloatingIP: "flip1",
 					},
 				},
 				{
 					provider: FakeAmazon,
 					role:     db.Worker,
-					Machine: machine.Machine{
+					Machine: db.Machine{
 						PublicIP:   "wIP2",
-						ID:         "m4",
+						CloudID:    "m4",
 						FloatingIP: "flip2",
 					},
 				},
@@ -379,7 +378,7 @@ func TestSync(t *testing.T) {
 	}
 
 	type assertion struct {
-		boot      []machine.Machine
+		boot      []db.Machine
 		stop      []string
 		updateIPs []ipRequest
 	}
@@ -398,7 +397,7 @@ func TestSync(t *testing.T) {
 		var updatedIPs []ipRequest
 		for _, m := range providerInst.updatedIPs {
 			updatedIPs = append(updatedIPs,
-				ipRequest{id: m.ID, ip: m.FloatingIP})
+				ipRequest{id: m.CloudID, ip: m.FloatingIP})
 		}
 		assert.Equal(t, expected.updateIPs, updatedIPs, "updateIPs")
 
@@ -419,7 +418,7 @@ func TestSync(t *testing.T) {
 		return nil
 	})
 	checkSync(clst, FakeAmazon, testRegion,
-		assertion{boot: []machine.Machine{
+		assertion{boot: []db.Machine{
 			{Size: "m4.large", Role: db.Master},
 		}})
 
@@ -435,7 +434,7 @@ func TestSync(t *testing.T) {
 		return nil
 	})
 	checkSync(clst, FakeAmazon, testRegion,
-		assertion{boot: []machine.Machine{
+		assertion{boot: []db.Machine{
 			{Size: "m4.xlarge", Role: db.Master},
 		}})
 
@@ -451,7 +450,7 @@ func TestSync(t *testing.T) {
 		return nil
 	})
 	checkSync(clst, FakeVagrant, testRegion,
-		assertion{boot: []machine.Machine{
+		assertion{boot: []db.Machine{
 			{Size: "vagrant.large", Role: db.Master},
 		}})
 
@@ -481,7 +480,7 @@ func TestSync(t *testing.T) {
 		return nil
 	})
 	checkSync(clst, FakeAmazon, testRegion, assertion{
-		boot: []machine.Machine{
+		boot: []db.Machine{
 			{Size: "m4.large", Role: db.Master},
 		},
 	})
@@ -549,7 +548,7 @@ func TestSync(t *testing.T) {
 		return nil
 	})
 	checkSync(clst, FakeAmazon, testRegion, assertion{
-		boot: []machine.Machine{
+		boot: []db.Machine{
 			{Size: "m4.xlarge", Role: db.Worker},
 		},
 		stop: []string{toRemove.CloudID},
@@ -568,7 +567,7 @@ func TestSync(t *testing.T) {
 	})
 
 	checkSync(clst, FakeAmazon, testRegion, assertion{
-		boot: []machine.Machine{
+		boot: []db.Machine{
 			{Size: "m4.xlarge", Role: db.Master},
 		},
 	})
@@ -590,7 +589,7 @@ func TestSync(t *testing.T) {
 	})
 
 	checkSync(clst, FakeAmazon, testRegion, assertion{
-		boot: []machine.Machine{
+		boot: []db.Machine{
 			{Size: "m4.xlarge", Role: db.Worker},
 		},
 		stop: []string{toRemove.CloudID},
@@ -685,7 +684,7 @@ func TestUpdateCloud(t *testing.T) {
 	assert.True(t, oldAmzn == amzn)
 
 	assert.Empty(t, amzn.stopRequests)
-	assert.Equal(t, []machine.Machine{{
+	assert.Equal(t, []db.Machine{{
 		Size: "size1",
 	}}, amzn.bootRequests)
 	assert.Equal(t, "ns1", amzn.namespace)
@@ -714,7 +713,7 @@ func TestUpdateCloud(t *testing.T) {
 	assert.Empty(t, oldAmzn.stopRequests)
 
 	assert.Equal(t, "ns2", amzn.namespace)
-	assert.Equal(t, []machine.Machine{{
+	assert.Equal(t, []db.Machine{{
 		Size: "size2",
 	}}, amzn.bootRequests)
 	assert.Empty(t, amzn.stopRequests)
@@ -772,7 +771,7 @@ func TestMultiRegionDeploy(t *testing.T) {
 	assert.NotContains(t, machinesRemaining, joinMachine{
 		provider: FakeAmazon,
 		region:   validRegions(FakeAmazon)[0],
-		Machine:  machine.Machine{Size: "size1"},
+		Machine:  db.Machine{Size: "size1"},
 	})
 	cloudMachines, err := clst.get()
 	assert.NoError(t, err)
@@ -824,7 +823,7 @@ func mock() {
 	newProvider = func(p db.Provider, namespace, region string) (provider, error) {
 		ret := fakeProvider{
 			namespace: namespace,
-			machines:  make(map[string]machine.Machine),
+			machines:  make(map[string]db.Machine),
 			roles:     make(map[string]db.Role),
 		}
 		ret.clearLogs()

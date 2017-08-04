@@ -13,7 +13,6 @@ import (
 	"github.com/quilt/quilt/cloud/digitalocean"
 	"github.com/quilt/quilt/cloud/foreman"
 	"github.com/quilt/quilt/cloud/google"
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/cloud/vagrant"
 	"github.com/quilt/quilt/connection"
 	"github.com/quilt/quilt/counter"
@@ -23,15 +22,15 @@ import (
 )
 
 type provider interface {
-	List() ([]machine.Machine, error)
+	List() ([]db.Machine, error)
 
-	Boot([]machine.Machine) error
+	Boot([]db.Machine) error
 
-	Stop([]machine.Machine) error
+	Stop([]db.Machine) error
 
 	SetACLs([]acl.ACL) error
 
-	UpdateFloatingIPs([]machine.Machine) error
+	UpdateFloatingIPs([]db.Machine) error
 }
 
 // Store the providers in a variable so we can change it in the tests
@@ -156,7 +155,7 @@ func (cld cloud) boot(machines []db.Machine) {
 	var cloudMachines []joinMachine
 	for _, m := range machines {
 		cloudMachines = append(cloudMachines, joinMachine{
-			Machine: machine.Machine{
+			Machine: db.Machine{
 				Size:        m.Size,
 				DiskSize:    m.DiskSize,
 				Preemptible: m.Preemptible,
@@ -173,7 +172,7 @@ func (cld cloud) boot(machines []db.Machine) {
 	cld.updateCloud(cloudMachines, provider.Boot, "boot")
 }
 
-type machineAction func(provider, []machine.Machine) error
+type machineAction func(provider, []db.Machine) error
 
 func (cld cloud) updateCloud(machines []joinMachine, fn machineAction, action string) {
 	if len(machines) == 0 {
@@ -217,7 +216,7 @@ func (cld cloud) updateCloud(machines []joinMachine, fn machineAction, action st
 }
 
 type joinMachine struct {
-	machine.Machine
+	db.Machine
 
 	provider db.Provider
 	region   string
@@ -274,7 +273,7 @@ func (cld cloud) join() (joinResult, error) {
 			m := pair.R.(joinMachine)
 
 			if m.role != db.None && m.role == dbm.Role {
-				dbm.CloudID = m.ID
+				dbm.CloudID = m.CloudID
 			}
 
 			if dbm.PublicIP != m.PublicIP {
@@ -364,7 +363,7 @@ func syncDB(cms []joinMachine, dbms []db.Machine) syncDBResult {
 		dbm := l.(db.Machine)
 		m := r.(joinMachine)
 
-		if dbm.CloudID == m.ID && dbm.Provider == m.provider &&
+		if dbm.CloudID == m.CloudID && dbm.Provider == m.provider &&
 			dbm.Preemptible == m.Preemptible &&
 			dbm.Region == m.region && dbm.Size == m.Size &&
 			(m.DiskSize == 0 || dbm.DiskSize == m.DiskSize) &&
@@ -414,7 +413,7 @@ func syncDB(cms []joinMachine, dbms []db.Machine) syncDBResult {
 		dbm := pair.L.(db.Machine)
 		m := pair.R.(joinMachine)
 
-		if dbm.CloudID == m.ID && dbm.FloatingIP != m.FloatingIP {
+		if dbm.CloudID == m.CloudID && dbm.FloatingIP != m.FloatingIP {
 			m.FloatingIP = dbm.FloatingIP
 			ret.updateIPs = append(ret.updateIPs, m)
 		}
@@ -427,7 +426,7 @@ func syncDB(cms []joinMachine, dbms []db.Machine) syncDBResult {
 
 type listResponse struct {
 	loc      launchLoc
-	machines []machine.Machine
+	machines []db.Machine
 	err      error
 }
 
@@ -483,8 +482,8 @@ func getMachineRoles(machines []joinMachine) (withRoles []joinMachine) {
 	return withRoles
 }
 
-func groupByLoc(machines []joinMachine) map[launchLoc][]machine.Machine {
-	machineMap := map[launchLoc][]machine.Machine{}
+func groupByLoc(machines []joinMachine) map[launchLoc][]db.Machine {
+	machineMap := map[launchLoc][]db.Machine{}
 	for _, m := range machines {
 		loc := launchLoc{m.provider, m.region}
 		machineMap[loc] = append(machineMap[loc], m.Machine)

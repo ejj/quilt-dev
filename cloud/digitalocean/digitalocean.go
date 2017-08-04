@@ -13,9 +13,9 @@ import (
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/digitalocean/client"
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/cloud/wait"
 	"github.com/quilt/quilt/counter"
+	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/util"
 
@@ -78,7 +78,7 @@ var newDigitalOcean = func(namespace, region string) (*Provider, error) {
 }
 
 // List will fetch all droplets that have the same name as the cluster namespace.
-func (prvdr Provider) List() (machines []machine.Machine, err error) {
+func (prvdr Provider) List() (machines []db.Machine, err error) {
 	floatingIPListOpt := &godo.ListOptions{}
 	floatingIPs := map[int]string{}
 	for {
@@ -123,8 +123,8 @@ func (prvdr Provider) List() (machines []machine.Machine, err error) {
 				return nil, fmt.Errorf("get private IP: %s", err)
 			}
 
-			machine := machine.Machine{
-				ID:          strconv.Itoa(d.ID),
+			machine := db.Machine{
+				CloudID:     strconv.Itoa(d.ID),
 				PublicIP:    pubIP,
 				PrivateIP:   privIP,
 				FloatingIP:  floatingIPs[d.ID],
@@ -144,14 +144,14 @@ func (prvdr Provider) List() (machines []machine.Machine, err error) {
 }
 
 // Boot will boot every machine in a goroutine, and wait for the machines to come up.
-func (prvdr Provider) Boot(bootSet []machine.Machine) error {
+func (prvdr Provider) Boot(bootSet []db.Machine) error {
 	errChan := make(chan error, len(bootSet))
 	for _, m := range bootSet {
 		if m.Preemptible {
 			return errors.New("preemptible instances are not yet implemented")
 		}
 
-		go func(m machine.Machine) {
+		go func(m db.Machine) {
 			errChan <- prvdr.createAndAttach(m)
 		}(m)
 	}
@@ -166,7 +166,7 @@ func (prvdr Provider) Boot(bootSet []machine.Machine) error {
 }
 
 // Creates a new machine, and waits for the machine to become active.
-func (prvdr Provider) createAndAttach(m machine.Machine) error {
+func (prvdr Provider) createAndAttach(m db.Machine) error {
 	cloudConfig := cfg.Ubuntu(m, "")
 	createReq := &godo.DropletCreateRequest{
 		Name:              prvdr.namespace,
@@ -190,7 +190,7 @@ func (prvdr Provider) createAndAttach(m machine.Machine) error {
 }
 
 // UpdateFloatingIPs updates Droplet to Floating IP associations.
-func (prvdr Provider) UpdateFloatingIPs(desired []machine.Machine) error {
+func (prvdr Provider) UpdateFloatingIPs(desired []db.Machine) error {
 	curr, err := prvdr.List()
 	if err != nil {
 		return fmt.Errorf("list machines: %s", err)
@@ -199,24 +199,24 @@ func (prvdr Provider) UpdateFloatingIPs(desired []machine.Machine) error {
 	return prvdr.syncFloatingIPs(curr, desired)
 }
 
-func (prvdr Provider) syncFloatingIPs(curr, targets []machine.Machine) error {
+func (prvdr Provider) syncFloatingIPs(curr, targets []db.Machine) error {
 	idKey := func(intf interface{}) interface{} {
-		return intf.(machine.Machine).ID
+		return intf.(db.Machine).CloudID
 	}
 	pairs, _, unmatchedDesired := join.HashJoin(
-		machine.Slice(curr), machine.Slice(targets), idKey, idKey)
+		db.MachineSlice(curr), db.MachineSlice(targets), idKey, idKey)
 
 	if len(unmatchedDesired) != 0 {
 		var unmatchedIDs []string
 		for _, m := range unmatchedDesired {
-			unmatchedIDs = append(unmatchedIDs, m.(machine.Machine).ID)
+			unmatchedIDs = append(unmatchedIDs, m.(db.Machine).CloudID)
 		}
 		return fmt.Errorf("no matching IDs: %s", strings.Join(unmatchedIDs, ", "))
 	}
 
 	for _, pair := range pairs {
-		curr := pair.L.(machine.Machine)
-		desired := pair.R.(machine.Machine)
+		curr := pair.L.(db.Machine)
+		desired := pair.R.(db.Machine)
 
 		if curr.FloatingIP == desired.FloatingIP {
 			continue
@@ -231,9 +231,10 @@ func (prvdr Provider) syncFloatingIPs(curr, targets []machine.Machine) error {
 		}
 
 		if desired.FloatingIP != "" {
-			id, err := strconv.Atoi(curr.ID)
+			id, err := strconv.Atoi(curr.CloudID)
 			if err != nil {
-				return fmt.Errorf("malformed id (%s): %s", curr.ID, err)
+				return fmt.Errorf("malformed id (%s): %s",
+					curr.CloudID, err)
 			}
 
 			_, _, err = prvdr.AssignFloatingIP(desired.FloatingIP, id)
@@ -248,11 +249,11 @@ func (prvdr Provider) syncFloatingIPs(curr, targets []machine.Machine) error {
 }
 
 // Stop stops each machine and deletes their attached volumes.
-func (prvdr Provider) Stop(machines []machine.Machine) error {
+func (prvdr Provider) Stop(machines []db.Machine) error {
 	errChan := make(chan error, len(machines))
 	for _, m := range machines {
-		go func(m machine.Machine) {
-			errChan <- prvdr.deleteAndWait(m.ID)
+		go func(m db.Machine) {
+			errChan <- prvdr.deleteAndWait(m.CloudID)
 		}(m)
 	}
 

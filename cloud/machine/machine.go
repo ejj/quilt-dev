@@ -17,20 +17,6 @@ type Description struct {
 	Region string
 }
 
-// Machine represents an instance of a machine booted by a Provider.
-type Machine struct {
-	ID          string
-	PublicIP    string
-	PrivateIP   string
-	FloatingIP  string
-	Preemptible bool
-	Size        string
-	DiskSize    int
-
-	SSHKeys []string
-	Role    db.Role
-}
-
 // ChooseSize returns an acceptable machine size for the given provider that fits the
 // provided ram, cpu, and price constraints.
 func ChooseSize(provider db.Provider, ram, cpu stitch.Range, maxPrice float64) string {
@@ -75,17 +61,4 @@ func vagrantSize(ramRange, cpuRange stitch.Range) string {
 		cpu = 1
 	}
 	return fmt.Sprintf("%g,%g", ram, cpu)
-}
-
-// Slice is an alias for []Machine to allow for joins.
-type Slice []Machine
-
-// Get returns the value contained at the given index.
-func (slc Slice) Get(ii int) interface{} {
-	return slc[ii]
-}
-
-// Len returns the number of items in the slice.
-func (slc Slice) Len() int {
-	return len(slc)
 }

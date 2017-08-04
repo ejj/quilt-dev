@@ -10,8 +10,8 @@ import (
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/amazon/client"
 	"github.com/quilt/quilt/cloud/cfg"
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/cloud/wait"
+	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -33,7 +33,7 @@ type awsMachine struct {
 	instanceID string
 	spotID     string
 
-	machine machine.Machine
+	machine db.Machine
 }
 
 const (
@@ -104,7 +104,7 @@ type bootReq struct {
 }
 
 // Boot creates instances in the `prvdr` configured according to the `bootSet`.
-func (prvdr *Provider) Boot(bootSet []machine.Machine) error {
+func (prvdr *Provider) Boot(bootSet []db.Machine) error {
 	if len(bootSet) <= 0 {
 		return nil
 	}
@@ -203,13 +203,13 @@ func (prvdr *Provider) bootSpot(br bootReq, count int64) error {
 }
 
 // Stop shuts down `machines` in `prvdr`.
-func (prvdr *Provider) Stop(machines []machine.Machine) error {
+func (prvdr *Provider) Stop(machines []db.Machine) error {
 	var spotIDs, instIDs []string
 	for _, m := range machines {
 		if m.Preemptible {
-			spotIDs = append(spotIDs, m.ID)
+			spotIDs = append(spotIDs, m.CloudID)
 		} else {
-			instIDs = append(instIDs, m.ID)
+			instIDs = append(instIDs, m.CloudID)
 		}
 	}
 
@@ -348,7 +348,7 @@ func (prvdr *Provider) listInstances() (instances []awsMachine, err error) {
 				instanceID: resolveString(inst.InstanceId),
 				spotID: resolveString(
 					inst.SpotInstanceRequestId),
-				machine: machine.Machine{
+				machine: db.Machine{
 					PublicIP:   resolveString(inst.PublicIpAddress),
 					PrivateIP:  resolveString(inst.PrivateIpAddress),
 					FloatingIP: floatingIP,
@@ -362,7 +362,7 @@ func (prvdr *Provider) listInstances() (instances []awsMachine, err error) {
 }
 
 // List queries `prvdr` for the list of booted machines.
-func (prvdr *Provider) List() (machines []machine.Machine, err error) {
+func (prvdr *Provider) List() (machines []db.Machine, err error) {
 	allSpots, err := prvdr.listSpots()
 	if err != nil {
 		return nil, err
@@ -393,9 +393,9 @@ func (prvdr *Provider) List() (machines []machine.Machine, err error) {
 	for _, awsm := range awsMachines {
 		cm := awsm.machine
 		cm.Preemptible = awsm.spotID != ""
-		cm.ID = awsm.spotID
+		cm.CloudID = awsm.spotID
 		if !cm.Preemptible {
-			cm.ID = awsm.instanceID
+			cm.CloudID = awsm.instanceID
 		}
 		machines = append(machines, cm)
 	}
@@ -403,7 +403,7 @@ func (prvdr *Provider) List() (machines []machine.Machine, err error) {
 }
 
 // UpdateFloatingIPs updates Elastic IPs <> EC2 instance associations.
-func (prvdr *Provider) UpdateFloatingIPs(machines []machine.Machine) error {
+func (prvdr *Provider) UpdateFloatingIPs(machines []db.Machine) error {
 	addrs, err := prvdr.DescribeAddresses()
 	if err != nil {
 		return err
@@ -424,7 +424,7 @@ func (prvdr *Provider) UpdateFloatingIPs(machines []machine.Machine) error {
 	}
 
 	for _, machine := range machines {
-		id := machine.ID
+		id := machine.CloudID
 		if machine.Preemptible {
 			id, err = prvdr.getInstanceID(id)
 			if err != nil {
@@ -488,7 +488,7 @@ func (prvdr *Provider) wait(ids []string, boot bool) error {
 				continue
 			}
 
-			exists[inst.ID] = struct{}{}
+			exists[inst.CloudID] = struct{}{}
 		}
 
 		for _, id := range ids {

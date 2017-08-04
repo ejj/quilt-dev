@@ -12,8 +12,8 @@ import (
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/google/client"
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/cloud/wait"
+	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
 	"github.com/quilt/quilt/util"
 
@@ -108,8 +108,8 @@ func getNetworkConfig(inst *compute.Instance) (
 }
 
 // List the current machines in the cluster.
-func (prvdr *Provider) List() ([]machine.Machine, error) {
-	var machines []machine.Machine
+func (prvdr *Provider) List() ([]db.Machine, error) {
+	var machines []db.Machine
 	instances, err := prvdr.ListInstances(prvdr.zone,
 		fmt.Sprintf("description eq %s", prvdr.ns))
 	if err != nil {
@@ -129,8 +129,8 @@ func (prvdr *Provider) List() ([]machine.Machine, error) {
 			floatingIP = accessConfig.NatIP
 		}
 
-		machines = append(machines, machine.Machine{
-			ID:         instance.Name,
+		machines = append(machines, db.Machine{
+			CloudID:    instance.Name,
 			PublicIP:   accessConfig.NatIP,
 			FloatingIP: floatingIP,
 			PrivateIP:  iface.NetworkIP,
@@ -141,7 +141,7 @@ func (prvdr *Provider) List() ([]machine.Machine, error) {
 }
 
 // Boot blocks while creating instances.
-func (prvdr *Provider) Boot(bootSet []machine.Machine) error {
+func (prvdr *Provider) Boot(bootSet []db.Machine) error {
 	// XXX: should probably have a better clean up routine if an error is encountered
 	var names []string
 	for _, m := range bootSet {
@@ -154,7 +154,7 @@ func (prvdr *Provider) Boot(bootSet []machine.Machine) error {
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
-				"id":    m.ID,
+				"id":    m.CloudID,
 			}).Error("Failed to start instance.")
 			continue
 		}
@@ -170,19 +170,19 @@ func (prvdr *Provider) Boot(bootSet []machine.Machine) error {
 //
 // If an error occurs while deleting, it will finish the ones that have
 // successfully started before returning.
-func (prvdr *Provider) Stop(machines []machine.Machine) error {
+func (prvdr *Provider) Stop(machines []db.Machine) error {
 	// XXX: should probably have a better clean up routine if an error is encountered
 	var names []string
 	for _, m := range machines {
-		_, err := prvdr.DeleteInstance(prvdr.zone, m.ID)
+		_, err := prvdr.DeleteInstance(prvdr.zone, m.CloudID)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
-				"id":    m.ID,
+				"id":    m.CloudID,
 			}).Error("Failed to delete instance.")
 			continue
 		}
-		names = append(names, m.ID)
+		names = append(names, m.CloudID)
 	}
 	if err := prvdr.wait(names, false); err != nil {
 		return err
@@ -201,7 +201,7 @@ func (prvdr *Provider) wait(ids []string, shouldLive bool) error {
 
 		liveMachines := map[string]struct{}{}
 		for _, m := range machines {
-			liveMachines[m.ID] = struct{}{}
+			liveMachines[m.CloudID] = struct{}{}
 		}
 
 		for _, id := range ids {
@@ -443,9 +443,9 @@ func (prvdr *Provider) SetACLs(acls []acl.ACL) error {
 }
 
 // UpdateFloatingIPs updates IPs of machines by recreating their network interfaces.
-func (prvdr *Provider) UpdateFloatingIPs(machines []machine.Machine) error {
+func (prvdr *Provider) UpdateFloatingIPs(machines []db.Machine) error {
 	for _, m := range machines {
-		instance, err := prvdr.GetInstance(prvdr.zone, m.ID)
+		instance, err := prvdr.GetInstance(prvdr.zone, m.CloudID)
 		if err != nil {
 			return err
 		}
@@ -457,14 +457,14 @@ func (prvdr *Provider) UpdateFloatingIPs(machines []machine.Machine) error {
 		if err != nil {
 			return err
 		}
-		_, err = prvdr.DeleteAccessConfig(prvdr.zone, m.ID,
+		_, err = prvdr.DeleteAccessConfig(prvdr.zone, m.CloudID,
 			accessConfig.Name, networkInterface.Name)
 		if err != nil {
 			return err
 		}
 
 		// Add new network interface.
-		_, err = prvdr.AddAccessConfig(prvdr.zone, m.ID,
+		_, err = prvdr.AddAccessConfig(prvdr.zone, m.CloudID,
 			networkInterface.Name, &compute.AccessConfig{
 				Type: "ONE_TO_ONE_NAT",
 				Name: floatingIPName,

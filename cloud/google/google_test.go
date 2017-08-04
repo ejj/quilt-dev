@@ -6,7 +6,7 @@ import (
 
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/google/client/mocks"
-	"github.com/quilt/quilt/cloud/machine"
+	"github.com/quilt/quilt/db"
 	"github.com/stretchr/testify/suite"
 
 	compute "google.golang.org/api/compute/v1"
@@ -52,8 +52,8 @@ func (s *GoogleTestSuite) TestList() {
 	machines, err := s.List()
 	s.NoError(err)
 	s.Len(machines, 1)
-	s.Equal(machines[0], machine.Machine{
-		ID:        "name-1",
+	s.Equal(machines[0], db.Machine{
+		CloudID:   "name-1",
 		PublicIP:  "x.x.x.x",
 		PrivateIP: "y.y.y.y",
 		Size:      "type-1",

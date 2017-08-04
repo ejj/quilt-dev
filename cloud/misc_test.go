@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 )
 
@@ -75,7 +74,7 @@ func TestGroupBy(t *testing.T) {
 		{provider: db.Google}, {provider: db.Amazon}, {provider: db.Google},
 		{provider: db.Google},
 	})
-	assert.Equal(t, map[launchLoc][]machine.Machine{
+	assert.Equal(t, map[launchLoc][]db.Machine{
 		{db.Amazon, ""}: {{}},
 		{db.Google, ""}: {{}, {}, {}},
 	}, grouped)

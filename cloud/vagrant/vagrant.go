@@ -7,8 +7,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/cfg"
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/counter"
+	"github.com/quilt/quilt/db"
 	"github.com/satori/go.uuid"
 )
 
@@ -27,7 +27,7 @@ func New(namespace string) (*Provider, error) {
 }
 
 // Boot creates instances in the `prvdr` configured according to the `bootSet`.
-func (prvdr Provider) Boot(bootSet []machine.Machine) error {
+func (prvdr Provider) Boot(bootSet []db.Machine) error {
 	for _, m := range bootSet {
 		if m.Preemptible {
 			return errors.New(
@@ -42,7 +42,7 @@ func (prvdr Provider) Boot(bootSet []machine.Machine) error {
 	var wg sync.WaitGroup
 	for _, m := range bootSet {
 		wg.Add(1)
-		go func(m machine.Machine) {
+		go func(m db.Machine) {
 			defer wg.Done()
 			if err := bootMachine(m); err != nil {
 				select {
@@ -63,7 +63,7 @@ func (prvdr Provider) Boot(bootSet []machine.Machine) error {
 	return err
 }
 
-func bootMachine(m machine.Machine) error {
+func bootMachine(m db.Machine) error {
 	id := uuid.NewV4().String()
 
 	err := initMachine(cfg.Ubuntu(m, inboundPublicInterface), m.Size, id)
@@ -79,8 +79,8 @@ func bootMachine(m machine.Machine) error {
 }
 
 // List queries `prvdr` for the list of booted machines.
-func (prvdr Provider) List() ([]machine.Machine, error) {
-	machines := []machine.Machine{}
+func (prvdr Provider) List() ([]db.Machine, error) {
+	machines := []db.Machine{}
 	instanceIDs, err := list()
 
 	if err != nil {
@@ -96,8 +96,8 @@ func (prvdr Provider) List() ([]machine.Machine, error) {
 				"Failed to retrieve IP address for %s.",
 				instanceID)
 		}
-		instance := machine.Machine{
-			ID:        instanceID,
+		instance := db.Machine{
+			CloudID:   instanceID,
 			PublicIP:  ip,
 			PrivateIP: ip,
 			Size:      size(instanceID),
@@ -108,12 +108,12 @@ func (prvdr Provider) List() ([]machine.Machine, error) {
 }
 
 // Stop shuts down `machines` in `prvdr.
-func (prvdr Provider) Stop(machines []machine.Machine) error {
+func (prvdr Provider) Stop(machines []db.Machine) error {
 	if machines == nil {
 		return nil
 	}
 	for _, m := range machines {
-		err := destroy(m.ID)
+		err := destroy(m.CloudID)
 		if err != nil {
 			return err
 		}
@@ -127,6 +127,6 @@ func (prvdr Provider) SetACLs(acls []acl.ACL) error {
 }
 
 // UpdateFloatingIPs is not supported.
-func (prvdr *Provider) UpdateFloatingIPs([]machine.Machine) error {
+func (prvdr *Provider) UpdateFloatingIPs([]db.Machine) error {
 	return errors.New("vagrant provider does not support floating IPs")
 }

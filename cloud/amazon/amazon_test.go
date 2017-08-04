@@ -15,7 +15,6 @@ import (
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/amazon/client/mocks"
 	"github.com/quilt/quilt/cloud/cfg"
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/util"
 )
@@ -106,29 +105,29 @@ func TestList(t *testing.T) {
 	machines, err := amazonProvider.List()
 
 	assert.Nil(t, err)
-	assert.Equal(t, []machine.Machine{
+	assert.Equal(t, []db.Machine{
 		{
-			ID:          "inst3",
+			CloudID:     "inst3",
 			Size:        "size2",
 			DiskSize:    32,
 			FloatingIP:  "8.8.8.8",
 			Preemptible: false,
 		},
 		{
-			ID:          "spot1",
+			CloudID:     "spot1",
 			PublicIP:    "publicIP",
 			PrivateIP:   "privateIP",
 			Size:        "size",
 			Preemptible: true,
 		},
 		{
-			ID:          "spot2",
+			CloudID:     "spot2",
 			Size:        "size2",
 			FloatingIP:  "xx.xxx.xxx.xxx",
 			Preemptible: true,
 		},
 		{
-			ID:          "spot3",
+			CloudID:     "spot3",
 			Preemptible: true,
 		},
 	}, machines)
@@ -349,7 +348,7 @@ func TestBoot(t *testing.T) {
 	amazonProvider := newAmazon(testNamespace, DefaultRegion)
 	amazonProvider.Client = mc
 
-	err := amazonProvider.Boot([]machine.Machine{
+	err := amazonProvider.Boot([]db.Machine{
 		{
 			Role:        db.Master,
 			Size:        "m4.large",
@@ -377,7 +376,7 @@ func TestBoot(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	cfg := cfg.Ubuntu(machine.Machine{Role: db.Master}, "")
+	cfg := cfg.Ubuntu(db.Machine{Role: db.Master}, "")
 	mc.AssertCalled(t, "RequestSpotInstances", spotPrice, int64(2),
 		&ec2.RequestSpotLaunchSpecification{
 			ImageId:      aws.String(amis[DefaultRegion]),
@@ -443,10 +442,10 @@ func TestBootUnsuccessful(t *testing.T) {
 
 	amazonProvider := newAmazon(testNamespace, DefaultRegion)
 	amazonProvider.Client = mc
-	err := amazonProvider.Boot([]machine.Machine{{Preemptible: false}})
+	err := amazonProvider.Boot([]db.Machine{{Preemptible: false}})
 	assert.Error(t, err)
 
-	err = amazonProvider.Boot([]machine.Machine{{Preemptible: true}})
+	err = amazonProvider.Boot([]db.Machine{{Preemptible: true}})
 	assert.Error(t, err)
 
 	mc.AssertExpectations(t)
@@ -484,17 +483,17 @@ func TestStop(t *testing.T) {
 	amazonProvider := newAmazon(testNamespace, DefaultRegion)
 	amazonProvider.Client = mc
 
-	err := amazonProvider.Stop([]machine.Machine{
+	err := amazonProvider.Stop([]db.Machine{
 		{
-			ID:          spotIDs[0],
+			CloudID:     spotIDs[0],
 			Preemptible: true,
 		},
 		{
-			ID:          spotIDs[1],
+			CloudID:     spotIDs[1],
 			Preemptible: true,
 		},
 		{
-			ID:          reservedIDs[0],
+			CloudID:     reservedIDs[0],
 			Preemptible: false,
 		},
 	})
@@ -672,35 +671,35 @@ func TestUpdateFloatingIPs(t *testing.T) {
 	amazonProvider := newAmazon(testNamespace, DefaultRegion)
 	amazonProvider.Client = mockClient
 
-	mockMachines := []machine.Machine{
+	mockMachines := []db.Machine{
 		// Quilt should assign "x.x.x.x" to sir-1.
 		{
-			ID:          "sir-1",
+			CloudID:     "sir-1",
 			FloatingIP:  "x.x.x.x",
 			Preemptible: true,
 		},
 		// Quilt should disassociate all floating IPs from spot instance sir-2.
 		{
-			ID:          "sir-2",
+			CloudID:     "sir-2",
 			FloatingIP:  "",
 			Preemptible: true,
 		},
 		// Quilt is asked to disassociate floating IPs from sir-3. sir-3 no longer
 		// has IP associations, but Quilt should not error.
 		{
-			ID:          "sir-3",
+			CloudID:     "sir-3",
 			FloatingIP:  "",
 			Preemptible: true,
 		},
 		// Quilt should assign "x.x.x.x" to reserved-1.
 		{
-			ID:          "reserved-1",
+			CloudID:     "reserved-1",
 			FloatingIP:  "reservedAdd",
 			Preemptible: false,
 		},
 		// Quilt should disassociate all floating IPs from reserved-2.
 		{
-			ID:          "reserved-2",
+			CloudID:     "reserved-2",
 			FloatingIP:  "",
 			Preemptible: false,
 		},
@@ -708,7 +707,7 @@ func TestUpdateFloatingIPs(t *testing.T) {
 		// reserved-3 no longer has IP associations, but Quilt should not
 		// error.
 		{
-			ID:          "reserved-3",
+			CloudID:     "reserved-3",
 			FloatingIP:  "",
 			Preemptible: false,
 		},

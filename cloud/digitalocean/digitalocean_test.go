@@ -17,7 +17,7 @@ import (
 
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/digitalocean/client/mocks"
-	"github.com/quilt/quilt/cloud/machine"
+	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/util"
 )
 
@@ -132,16 +132,16 @@ func TestList(t *testing.T) {
 
 	machines, err := doPrvdr.List()
 	assert.Nil(t, err)
-	assert.Equal(t, machines, []machine.Machine{
+	assert.Equal(t, machines, []db.Machine{
 		{
-			ID:          "123",
+			CloudID:     "123",
 			PublicIP:    "publicIP",
 			PrivateIP:   "privateIP",
 			Size:        "size",
 			Preemptible: false,
 		},
 		{
-			ID:          "125",
+			CloudID:     "125",
 			PublicIP:    "publicIP",
 			PrivateIP:   "privateIP",
 			FloatingIP:  "floatingIP",
@@ -189,14 +189,14 @@ func TestBoot(t *testing.T) {
 
 	util.Sleep = func(t time.Duration) {}
 
-	bootSet := []machine.Machine{}
+	bootSet := []db.Machine{}
 	err = doPrvdr.Boot(bootSet)
 	assert.Nil(t, err)
 
 	// Create a list of machines to boot.
-	bootSet = []machine.Machine{
+	bootSet = []db.Machine{
 		{
-			ID:        "123",
+			CloudID:   "123",
 			PublicIP:  "publicIP",
 			PrivateIP: "privateIP",
 			Size:      "size",
@@ -225,8 +225,8 @@ func TestBoot(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Error CreateDroplet.
-	doubleBootSet := append(bootSet, machine.Machine{
-		ID:        "123",
+	doubleBootSet := append(bootSet, db.Machine{
+		CloudID:   "123",
 		PublicIP:  "publicIP",
 		PrivateIP: "privateIP",
 		Size:      "size",
@@ -240,7 +240,7 @@ func TestBoot(t *testing.T) {
 func TestBootPreemptible(t *testing.T) {
 	t.Parallel()
 
-	err := Provider{}.Boot([]machine.Machine{{Preemptible: true}})
+	err := Provider{}.Boot([]db.Machine{{Preemptible: true}})
 	assert.EqualError(t, err, "preemptible instances are not yet implemented")
 }
 
@@ -253,14 +253,14 @@ func TestStop(t *testing.T) {
 	util.Sleep = func(t time.Duration) {}
 
 	// Test empty stop set
-	stopSet := []machine.Machine{}
+	stopSet := []db.Machine{}
 	err = doPrvdr.Stop(stopSet)
 	assert.Nil(t, err)
 
 	// Test non-empty stop set
-	stopSet = []machine.Machine{
+	stopSet = []db.Machine{
 		{
-			ID:        "123",
+			CloudID:   "123",
 			PublicIP:  "publicIP",
 			PrivateIP: "privateIP",
 			Size:      "size",
@@ -286,16 +286,16 @@ func TestStop(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Error strconv.
-	badDoubleStopSet := []machine.Machine{
+	badDoubleStopSet := []db.Machine{
 		{
-			ID:        "123a",
+			CloudID:   "123a",
 			PublicIP:  "publicIP",
 			PrivateIP: "privateIP",
 			Size:      "size",
 			DiskSize:  0,
 		},
 		{
-			ID:        "123a",
+			CloudID:   "123a",
 			PublicIP:  "publicIP",
 			PrivateIP: "privateIP",
 			Size:      "size",
@@ -347,12 +347,12 @@ func TestUpdateFloatingIPs(t *testing.T) {
 	// Test assigning a floating IP.
 	mc.On("AssignFloatingIP", "ip", 1).Return(nil, nil, nil).Once()
 	err = client.syncFloatingIPs(
-		[]machine.Machine{
-			{ID: "1"},
-			{ID: "2"},
+		[]db.Machine{
+			{CloudID: "1"},
+			{CloudID: "2"},
 		},
-		[]machine.Machine{
-			{ID: "1", FloatingIP: "ip"},
+		[]db.Machine{
+			{CloudID: "1", FloatingIP: "ip"},
 		},
 	)
 	assert.NoError(t, err)
@@ -361,11 +361,11 @@ func TestUpdateFloatingIPs(t *testing.T) {
 	// Test error when assigning a floating IP.
 	mc.On("AssignFloatingIP", "ip", 1).Return(nil, nil, errMock).Once()
 	err = client.syncFloatingIPs(
-		[]machine.Machine{
-			{ID: "1"},
+		[]db.Machine{
+			{CloudID: "1"},
 		},
-		[]machine.Machine{
-			{ID: "1", FloatingIP: "ip"},
+		[]db.Machine{
+			{CloudID: "1", FloatingIP: "ip"},
 		},
 	)
 	assert.EqualError(t, err, fmt.Sprintf("assign IP (ip to 1): %s", errMsg))
@@ -375,13 +375,13 @@ func TestUpdateFloatingIPs(t *testing.T) {
 	mc.On("AssignFloatingIP", "ip", 1).Return(nil, nil, nil).Once()
 	mc.On("UnassignFloatingIP", "remove").Return(nil, nil, nil).Once()
 	err = client.syncFloatingIPs(
-		[]machine.Machine{
-			{ID: "1"},
-			{ID: "2", FloatingIP: "remove"},
+		[]db.Machine{
+			{CloudID: "1"},
+			{CloudID: "2", FloatingIP: "remove"},
 		},
-		[]machine.Machine{
-			{ID: "1", FloatingIP: "ip"},
-			{ID: "2"},
+		[]db.Machine{
+			{CloudID: "1", FloatingIP: "ip"},
+			{CloudID: "2"},
 		},
 	)
 	assert.NoError(t, err)
@@ -390,11 +390,11 @@ func TestUpdateFloatingIPs(t *testing.T) {
 	// Test error when unassigning a floating IP.
 	mc.On("UnassignFloatingIP", "remove").Return(nil, nil, errMock).Once()
 	err = client.syncFloatingIPs(
-		[]machine.Machine{
-			{ID: "2", FloatingIP: "remove"},
+		[]db.Machine{
+			{CloudID: "2", FloatingIP: "remove"},
 		},
-		[]machine.Machine{
-			{ID: "2"},
+		[]db.Machine{
+			{CloudID: "2"},
 		},
 	)
 	assert.EqualError(t, err, fmt.Sprintf("unassign IP (remove): %s", errMsg))
@@ -405,11 +405,11 @@ func TestUpdateFloatingIPs(t *testing.T) {
 	mc.On("UnassignFloatingIP", "changeme").Return(nil, nil, nil).Once()
 	mc.On("AssignFloatingIP", "ip", 1).Return(nil, nil, nil).Once()
 	err = client.syncFloatingIPs(
-		[]machine.Machine{
-			{ID: "1", FloatingIP: "changeme"},
+		[]db.Machine{
+			{CloudID: "1", FloatingIP: "changeme"},
 		},
-		[]machine.Machine{
-			{ID: "1", FloatingIP: "ip"},
+		[]db.Machine{
+			{CloudID: "1", FloatingIP: "ip"},
 		},
 	)
 	assert.NoError(t, err)
@@ -417,29 +417,29 @@ func TestUpdateFloatingIPs(t *testing.T) {
 
 	// Test machines that need no changes.
 	err = client.syncFloatingIPs(
-		[]machine.Machine{
-			{ID: "1", FloatingIP: "ip"},
+		[]db.Machine{
+			{CloudID: "1", FloatingIP: "ip"},
 		},
-		[]machine.Machine{
-			{ID: "1", FloatingIP: "ip"},
+		[]db.Machine{
+			{CloudID: "1", FloatingIP: "ip"},
 		},
 	)
 	assert.NoError(t, err)
 	mc.AssertExpectations(t)
 
 	err = client.syncFloatingIPs(
-		[]machine.Machine{},
-		[]machine.Machine{
-			{ID: "1", FloatingIP: "ip"},
-			{ID: "2", FloatingIP: "ip2"},
+		[]db.Machine{},
+		[]db.Machine{
+			{CloudID: "1", FloatingIP: "ip"},
+			{CloudID: "2", FloatingIP: "ip2"},
 		},
 	)
 	assert.EqualError(t, err, "no matching IDs: 1, 2")
 
 	err = client.syncFloatingIPs(
-		[]machine.Machine{{ID: "NAN"}},
-		[]machine.Machine{
-			{ID: "NAN", FloatingIP: "ip"},
+		[]db.Machine{{CloudID: "NAN"}},
+		[]db.Machine{
+			{CloudID: "NAN", FloatingIP: "ip"},
 		},
 	)
 	assert.EqualError(t, err,

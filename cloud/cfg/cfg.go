@@ -6,7 +6,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/version"
 
@@ -25,7 +24,7 @@ var MinionTLSDir string
 
 // Ubuntu generates a cloud config file for the Ubuntu operating system with the
 // corresponding `version`.
-func Ubuntu(m machine.Machine, inboundPublic string) string {
+func Ubuntu(m db.Machine, inboundPublic string) string {
 	t := template.Must(template.New("cloudConfig").Parse(cfgTemplate))
 
 	img := fmt.Sprintf("%s:%s", quiltImage, ver)

@@ -3,7 +3,6 @@ package cfg
 import (
 	"testing"
 
-	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 
 	log "github.com/Sirupsen/logrus"
@@ -15,7 +14,7 @@ func TestCloudConfig(t *testing.T) {
 
 	log.SetLevel(log.InfoLevel)
 	ver = "master"
-	res := Ubuntu(machine.Machine{
+	res := Ubuntu(db.Machine{
 		SSHKeys: []string{"a", "b"},
 		Role:    db.Master,
 	}, "")
@@ -27,7 +26,7 @@ func TestCloudConfig(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ver = "1.2.3"
 	MinionTLSDir = "dir"
-	res = Ubuntu(machine.Machine{
+	res = Ubuntu(db.Machine{
 		SSHKeys: []string{"a", "b"},
 		Role:    db.Worker,
 	}, "ib")
