@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/cloud/cloudcfg"
+	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/google/client"
 	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/cloud/wait"
@@ -150,8 +150,7 @@ func (prvdr *Provider) Boot(bootSet []machine.Machine) error {
 		}
 
 		name := "quilt-" + uuid.NewV4().String()
-		_, err := prvdr.instanceNew(name, m.Size,
-			cloudcfg.Ubuntu(m.CloudCfgOpts))
+		_, err := prvdr.instanceNew(name, m.Size, cfg.Ubuntu(m.CfgOpts))
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err,

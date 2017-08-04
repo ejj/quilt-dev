@@ -3,7 +3,7 @@ package machine
 import (
 	"fmt"
 
-	"github.com/quilt/quilt/cloud/cloudcfg"
+	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/stitch"
 )
@@ -29,7 +29,7 @@ type Machine struct {
 	DiskSize    int
 
 	// Used only during Boot.
-	CloudCfgOpts cloudcfg.Options
+	CfgOpts cfg.Options
 }
 
 // ChooseSize returns an acceptable machine size for the given provider that fits the

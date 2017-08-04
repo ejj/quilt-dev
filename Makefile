@@ -3,7 +3,7 @@ PACKAGES=$(shell govendor list -no-status +local)
 NOVENDOR=$(shell find . -path -prune -o -path ./vendor -prune -o -name '*.go' -print)
 LINE_LENGTH_EXCLUDE=./api/pb/pb.pb.go \
 		    ./cloud/amazon/client/mocks/% \
-		    ./cloud/cloudcfg/template.go \
+		    ./cloud/cfg/template.go \
 		    ./cloud/digitalocean/client/mocks/% \
 		    ./cloud/google/client/mocks/% \
 		    ./cloud/machine/amazon.go \

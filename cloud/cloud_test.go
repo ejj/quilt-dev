@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/cloud/cloudcfg"
+	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
@@ -72,8 +72,8 @@ func (p *fakeProvider) Boot(bootSet []machine.Machine) error {
 		// We simulate this by setting the role of the machine returned by
 		// `List()` to be None, and only return the correct role in
 		// `getMachineRole`.
-		p.roles[toBoot.PublicIP] = toBoot.CloudCfgOpts.MinionOpts.Role
-		toBoot.CloudCfgOpts.MinionOpts.Role = db.None
+		p.roles[toBoot.PublicIP] = toBoot.CfgOpts.MinionOpts.Role
+		toBoot.CfgOpts.MinionOpts.Role = db.None
 
 		p.machines[idStr] = toBoot
 	}
@@ -406,13 +406,13 @@ func TestSync(t *testing.T) {
 		providerInst.clearLogs()
 	}
 
-	masterCloudCfg := cloudcfg.Options{
-		MinionOpts: cloudcfg.MinionOptions{
+	mastercfg := cfg.Options{
+		MinionOpts: cfg.MinionOptions{
 			Role: db.Master,
 		},
 	}
-	workerCloudCfg := cloudcfg.Options{
-		MinionOpts: cloudcfg.MinionOptions{
+	workercfg := cfg.Options{
+		MinionOpts: cfg.MinionOptions{
 			Role: db.Worker,
 		},
 	}
@@ -432,7 +432,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeAmazon, testRegion,
 		assertion{boot: []machine.Machine{
-			{Size: "m4.large", CloudCfgOpts: masterCloudCfg},
+			{Size: "m4.large", CfgOpts: mastercfg},
 		}})
 
 	// Test adding a machine with the same provider
@@ -448,7 +448,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeAmazon, testRegion,
 		assertion{boot: []machine.Machine{
-			{Size: "m4.xlarge", CloudCfgOpts: masterCloudCfg},
+			{Size: "m4.xlarge", CfgOpts: mastercfg},
 		}})
 
 	// Test adding a machine with a different provider
@@ -464,7 +464,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeVagrant, testRegion,
 		assertion{boot: []machine.Machine{
-			{Size: "vagrant.large", CloudCfgOpts: masterCloudCfg},
+			{Size: "vagrant.large", CfgOpts: mastercfg},
 		}})
 
 	// Test removing a machine
@@ -494,7 +494,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeAmazon, testRegion, assertion{
 		boot: []machine.Machine{
-			{Size: "m4.large", CloudCfgOpts: masterCloudCfg},
+			{Size: "m4.large", CfgOpts: mastercfg},
 		},
 	})
 
@@ -562,7 +562,7 @@ func TestSync(t *testing.T) {
 	})
 	checkSync(clst, FakeAmazon, testRegion, assertion{
 		boot: []machine.Machine{
-			{Size: "m4.xlarge", CloudCfgOpts: workerCloudCfg},
+			{Size: "m4.xlarge", CfgOpts: workercfg},
 		},
 		stop: []string{toRemove.CloudID},
 	})
@@ -581,7 +581,7 @@ func TestSync(t *testing.T) {
 
 	checkSync(clst, FakeAmazon, testRegion, assertion{
 		boot: []machine.Machine{
-			{Size: "m4.xlarge", CloudCfgOpts: masterCloudCfg},
+			{Size: "m4.xlarge", CfgOpts: mastercfg},
 		},
 	})
 
@@ -603,7 +603,7 @@ func TestSync(t *testing.T) {
 
 	checkSync(clst, FakeAmazon, testRegion, assertion{
 		boot: []machine.Machine{
-			{Size: "m4.xlarge", CloudCfgOpts: workerCloudCfg},
+			{Size: "m4.xlarge", CfgOpts: workercfg},
 		},
 		stop: []string{toRemove.CloudID},
 	})
@@ -634,8 +634,8 @@ func TestBootTLSDir(t *testing.T) {
 
 	assert.Equal(t, []machine.Machine{
 		{
-			CloudCfgOpts: cloudcfg.Options{
-				MinionOpts: cloudcfg.MinionOptions{
+			CfgOpts: cfg.Options{
+				MinionOpts: cfg.MinionOptions{
 					TLSDir: testTLSDir,
 				},
 			},

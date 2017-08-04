@@ -11,7 +11,7 @@ import (
 	"github.com/digitalocean/godo"
 
 	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/cloud/cloudcfg"
+	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/digitalocean/client"
 	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/cloud/wait"
@@ -167,7 +167,7 @@ func (prvdr Provider) Boot(bootSet []machine.Machine) error {
 
 // Creates a new machine, and waits for the machine to become active.
 func (prvdr Provider) createAndAttach(m machine.Machine) error {
-	cloudConfig := cloudcfg.Ubuntu(m.CloudCfgOpts)
+	cloudConfig := cfg.Ubuntu(m.CfgOpts)
 	createReq := &godo.DropletCreateRequest{
 		Name:              prvdr.namespace,
 		Region:            prvdr.region,

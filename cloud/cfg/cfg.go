@@ -1,4 +1,4 @@
-package cloudcfg
+package cfg
 
 import (
 	"bytes"

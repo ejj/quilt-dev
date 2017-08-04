@@ -9,7 +9,7 @@ import (
 
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/amazon/client"
-	"github.com/quilt/quilt/cloud/cloudcfg"
+	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/cloud/wait"
 	"github.com/quilt/quilt/join"
@@ -118,7 +118,7 @@ func (prvdr *Provider) Boot(bootSet []machine.Machine) error {
 	for _, m := range bootSet {
 		br := bootReq{
 			groupID:     groupID,
-			cfg:         cloudcfg.Ubuntu(m.CloudCfgOpts),
+			cfg:         cfg.Ubuntu(m.CfgOpts),
 			size:        m.Size,
 			diskSize:    m.DiskSize,
 			preemptible: m.Preemptible,

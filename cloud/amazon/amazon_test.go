@@ -14,7 +14,7 @@ import (
 
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/amazon/client/mocks"
-	"github.com/quilt/quilt/cloud/cloudcfg"
+	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/machine"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/util"
@@ -349,38 +349,38 @@ func TestBoot(t *testing.T) {
 	amazonProvider := newAmazon(testNamespace, DefaultRegion)
 	amazonProvider.Client = mc
 
-	cloudCfgOpts := cloudcfg.Options{
-		MinionOpts: cloudcfg.MinionOptions{Role: db.Master},
+	cfgOpts := cfg.Options{
+		MinionOpts: cfg.MinionOptions{Role: db.Master},
 	}
 	err := amazonProvider.Boot([]machine.Machine{
 		{
-			Size:         "m4.large",
-			DiskSize:     32,
-			CloudCfgOpts: cloudCfgOpts,
-			Preemptible:  true,
+			Size:        "m4.large",
+			DiskSize:    32,
+			CfgOpts:     CfgOpts,
+			Preemptible: true,
 		},
 		{
-			Size:         "m4.large",
-			DiskSize:     32,
-			CloudCfgOpts: cloudCfgOpts,
-			Preemptible:  true,
+			Size:        "m4.large",
+			DiskSize:    32,
+			CfgOpts:     CfgOpts,
+			Preemptible: true,
 		},
 		{
-			Size:         "m4.large",
-			DiskSize:     32,
-			CloudCfgOpts: cloudCfgOpts,
-			Preemptible:  false,
+			Size:        "m4.large",
+			DiskSize:    32,
+			CfgOpts:     CfgOpts,
+			Preemptible: false,
 		},
 		{
-			Size:         "m4.large",
-			DiskSize:     32,
-			CloudCfgOpts: cloudCfgOpts,
-			Preemptible:  false,
+			Size:        "m4.large",
+			DiskSize:    32,
+			CfgOpts:     CfgOpts,
+			Preemptible: false,
 		},
 	})
 	assert.Nil(t, err)
 
-	cfg := cloudcfg.Ubuntu(cloudCfgOpts)
+	cfg := cfg.Ubuntu(cfgOpts)
 	mc.AssertCalled(t, "RequestSpotInstances", spotPrice, int64(2),
 		&ec2.RequestSpotLaunchSpecification{
 			ImageId:      aws.String(amis[DefaultRegion]),

@@ -9,7 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/amazon"
-	"github.com/quilt/quilt/cloud/cloudcfg"
+	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/digitalocean"
 	"github.com/quilt/quilt/cloud/foreman"
 	"github.com/quilt/quilt/cloud/google"
@@ -165,9 +165,9 @@ func (cld cloud) boot(machines []db.Machine) {
 				Size:        m.Size,
 				DiskSize:    m.DiskSize,
 				Preemptible: m.Preemptible,
-				CloudCfgOpts: cloudcfg.Options{
+				CfgOpts: cfg.Options{
 					SSHKeys: m.SSHKeys,
-					MinionOpts: cloudcfg.MinionOptions{
+					MinionOpts: cfg.MinionOptions{
 						Role:   m.Role,
 						TLSDir: cld.minionTLSDir,
 					},
