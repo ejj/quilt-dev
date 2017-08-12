@@ -125,7 +125,7 @@ func getCurrentDeployment(c client.Client) (stitch.Stitch, error) {
 	case 0:
 		return stitch.Stitch{}, errNoBlueprint
 	case 1:
-		return stitch.FromJSON(blueprints[0].Blueprint)
+		return blueprints[0].Stitch, nil
 	default:
 		panic("unreached")
 	}

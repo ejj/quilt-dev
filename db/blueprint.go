@@ -3,14 +3,15 @@ package db
 import (
 	"errors"
 	"log"
+
+	"github.com/quilt/quilt/stitch"
 )
 
 // A Blueprint that Quilt is attempting to implement.
 type Blueprint struct {
 	ID int
 
-	Namespace string // Blueprint Namespace
-	Blueprint string `rowStringer:"omit"`
+	stitch.Stitch
 }
 
 // InsertBlueprint creates a new Blueprint and interts it into 'db'.

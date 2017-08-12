@@ -318,7 +318,7 @@ func updateStitch(t *testing.T, conn db.Conn, stitch stitch.Stitch, adminKey str
 		if err != nil {
 			blueprint = view.InsertBlueprint()
 		}
-		blueprint.Blueprint = stitch.String()
+		blueprint.Stitch = stitch
 		view.Commit(blueprint)
 		return nil
 	})

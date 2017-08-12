@@ -15,7 +15,7 @@ func TestStopNamespaceDefault(t *testing.T) {
 
 	c := new(clientMock.Client)
 	c.On("QueryBlueprints").Once().Return([]db.Blueprint{{
-		Blueprint: `{"namespace": "testSpace"}`}}, nil)
+		Stitch: stitch.Stitch{Namespace: "testSpace"}}}, nil)
 	c.On("Deploy", mock.Anything).Return(nil)
 
 	stopCmd := NewStopCommand()
@@ -49,8 +49,11 @@ func TestStopContainers(t *testing.T) {
 
 	c := &clientMock.Client{}
 	c.On("QueryBlueprints").Return([]db.Blueprint{{
-		Blueprint: `{"namespace": "testSpace", "machines": ` +
-			`[{"provider": "Amazon"}, {"provider": "Google"}]}`,
+		Stitch: stitch.Stitch{
+			Namespace: "testSpace",
+			Machines: []stitch.Machine{
+				{Provider: "Amazon"},
+				{Provider: "Google"}}},
 	}}, nil)
 
 	c.On("Deploy", mock.Anything).Return(nil)

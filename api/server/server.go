@@ -212,7 +212,7 @@ func (s server) Deploy(cts context.Context, deployReq *pb.DeployRequest) (
 			blueprint = view.InsertBlueprint()
 		}
 
-		blueprint.Blueprint = stitch.String()
+		blueprint.Stitch = stitch
 		view.Commit(blueprint)
 		return nil
 	})

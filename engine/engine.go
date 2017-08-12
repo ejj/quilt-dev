@@ -35,16 +35,8 @@ func updateTxn(view db.Database, adminKey string) error {
 		return err
 	}
 
-	stitch, err := stitch.FromJSON(blueprint.Blueprint)
-	if err != nil {
-		return err
-	}
-
-	blueprint.Namespace = stitch.Namespace
-	view.Commit(blueprint)
-
-	machineTxn(view, stitch, adminKey)
-	aclTxn(view, stitch)
+	machineTxn(view, blueprint.Stitch, adminKey)
+	aclTxn(view, blueprint.Stitch)
 	return nil
 }
 

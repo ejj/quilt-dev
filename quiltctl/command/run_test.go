@@ -199,7 +199,7 @@ func TestPromptsUser(t *testing.T) {
 
 		c := new(clientMock.Client)
 		c.On("QueryBlueprints").Return([]db.Blueprint{{
-			Blueprint: `{"old":"blueprint"}`,
+			Stitch: stitch.Stitch{Namespace: "old"},
 		}}, nil)
 		c.On("Deploy", "{}").Return(nil)
 
