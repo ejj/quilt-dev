@@ -18,6 +18,7 @@ import (
 	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
+	"github.com/quilt/quilt/stitch"
 	"github.com/quilt/quilt/util"
 )
 
@@ -67,8 +68,7 @@ func Run(conn db.Conn, creds connection.Credentials, minionTLSDir string) {
 
 	go updateMachineStatuses(conn)
 	var cld *cloud
-	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable,
-		db.ACLTable).C {
+	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable).C {
 		c.Inc("Run")
 		cld = updateCloud(conn, cld)
 
@@ -141,7 +141,7 @@ func (cld cloud) runOnce() {
 			// are in the cloud.  If we didn't, inter-machine ACLs could get
 			// removed when the Quilt controller restarts, even if there are
 			// running cloud machines that still need to communicate.
-			cld.syncACLs(jr.acl.Admin, jr.acl.ApplicationPorts, jr.machines)
+			cld.syncACLs(jr.acls, jr.machines)
 			return
 		}
 
@@ -226,7 +226,7 @@ type joinMachine struct {
 
 type joinResult struct {
 	machines []db.Machine
-	acl      db.ACL
+	acls     []acl.ACL
 
 	boot      []db.Machine
 	terminate []joinMachine
@@ -242,23 +242,18 @@ func (cld cloud) join() (joinResult, error) {
 		return res, err
 	}
 
-	err = cld.conn.Txn(db.ACLTable, db.BlueprintTable,
+	err = cld.conn.Txn(db.BlueprintTable,
 		db.MachineTable).Run(func(view db.Database) error {
-		namespace, err := view.GetBlueprintNamespace()
+		bp, err := view.GetBlueprint()
 		if err != nil {
-			log.WithError(err).Error("Failed to get namespace")
+			log.WithError(err).Error("Failed to get blueprint")
 			return err
 		}
 
-		if cld.namespace != namespace {
+		if cld.namespace != bp.Namespace {
 			err := errors.New("namespace change during a cloud run")
 			log.WithError(err).Debug("Cloud run abort")
 			return err
-		}
-
-		res.acl, err = view.GetACL()
-		if err != nil {
-			log.WithError(err).Error("Failed to get ACLs")
 		}
 
 		res.machines = view.SelectFromMachine(nil)
@@ -288,49 +283,73 @@ func (cld cloud) join() (joinResult, error) {
 
 			view.Commit(dbm)
 		}
+
+		for acl := range cld.getACLs(bp, res.machines) {
+			res.acls = append(res.acls, acl)
+		}
+
 		return nil
 	})
 	return res, err
 }
 
-func (cld cloud) syncACLs(adminACLs []string, appACLs []db.PortRange,
-	machines []db.Machine) {
+func (cld cloud) getACLs(bp db.Blueprint, machines []db.Machine) map[acl.ACL]struct{} {
+	aclSet := map[acl.ACL]struct{}{}
 
-	// Always allow traffic from the Quilt controller.
+	// Always allow traffic from the Quilt controller, so we append local.
+	for _, cidr := range append(bp.AdminACL, "local") {
+		acl := acl.ACL{
+			CidrIP:  cidr,
+			MinPort: 1,
+			MaxPort: 65535,
+		}
+		aclSet[acl] = struct{}{}
+	}
+
+	for _, m := range machines {
+		if m.PublicIP != "" {
+			// XXX: Look into the minimal set of necessary ports.
+			acl := acl.ACL{
+				CidrIP:  m.PublicIP + "/32",
+				MinPort: 1,
+				MaxPort: 65535,
+			}
+			aclSet[acl] = struct{}{}
+		}
+	}
+
+	for _, conn := range bp.Connections {
+		if conn.From == stitch.PublicInternetLabel {
+			acl := acl.ACL{
+				CidrIP:  "0.0.0.0/0",
+				MinPort: conn.MinPort,
+				MaxPort: conn.MaxPort,
+			}
+			aclSet[acl] = struct{}{}
+		}
+	}
+
+	return aclSet
+}
+
+func (cld cloud) syncACLs(unresolvedACLs []acl.ACL, machines []db.Machine) {
 	ip, err := myIP()
-	if err == nil {
-		adminACLs = append(adminACLs, ip+"/32")
-	} else {
+	if err != nil {
 		log.WithError(err).Error("Couldn't retrieve our IP address.")
+		return
 	}
 
 	var acls []acl.ACL
-	for _, adminACL := range adminACLs {
-		acls = append(acls, acl.ACL{
-			CidrIP:  adminACL,
-			MinPort: 1,
-			MaxPort: 65535,
-		})
-	}
-	for _, appACL := range appACLs {
-		acls = append(acls, acl.ACL{
-			CidrIP:  "0.0.0.0/0",
-			MinPort: appACL.MinPort,
-			MaxPort: appACL.MaxPort,
-		})
+	for _, acl := range unresolvedACLs {
+		if acl.CidrIP == "local" {
+			acl.CidrIP = ip + "/32"
+		}
+		acls = append(acls, acl)
 	}
 
 	// Providers with at least one machine.
 	prvdrSet := map[launchLoc]struct{}{}
 	for _, m := range machines {
-		if m.PublicIP != "" {
-			// XXX: Look into the minimal set of necessary ports.
-			acls = append(acls, acl.ACL{
-				CidrIP:  m.PublicIP + "/32",
-				MinPort: 1,
-				MaxPort: 65535,
-			})
-		}
 		prvdrSet[launchLoc{m.Provider, m.Region}] = struct{}{}
 	}
 

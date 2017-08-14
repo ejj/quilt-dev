@@ -32,9 +32,6 @@ var EtcdTable = TableType(reflect.TypeOf(Etcd{}).String())
 // PlacementTable is the type of the placement table.
 var PlacementTable = TableType(reflect.TypeOf(Placement{}).String())
 
-// ACLTable is the type of the ACL table.
-var ACLTable = TableType(reflect.TypeOf(ACL{}).String())
-
 // ImageTable is the type of the image table.
 var ImageTable = TableType(reflect.TypeOf(Image{}).String())
 
@@ -45,8 +42,8 @@ var HostnameTable = TableType(reflect.TypeOf(Hostname{}).String())
 // where there is no reason to put lots of thought into which tables a Transaction
 // should use.
 var AllTables = []TableType{BlueprintTable, MachineTable, ContainerTable, MinionTable,
-	ConnectionTable, LoadBalancerTable, EtcdTable, PlacementTable, ACLTable,
-	ImageTable, HostnameTable}
+	ConnectionTable, LoadBalancerTable, EtcdTable, PlacementTable, ImageTable,
+	HostnameTable}
 
 type table struct {
 	rows map[int]row

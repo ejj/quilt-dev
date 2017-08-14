@@ -18,9 +18,8 @@ var c = counter.New("Engine")
 
 // Run updates the database in response to stitch changes in the blueprint table.
 func Run(conn db.Conn, adminKey string) {
-	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable,
-		db.ACLTable).C {
-		conn.Txn(db.ACLTable, db.BlueprintTable, db.MachineTable).Run(
+	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable).C {
+		conn.Txn(db.BlueprintTable, db.MachineTable).Run(
 			func(view db.Database) error {
 				return updateTxn(view, adminKey)
 			})
@@ -36,30 +35,7 @@ func updateTxn(view db.Database, adminKey string) error {
 	}
 
 	machineTxn(view, blueprint.Stitch, adminKey)
-	aclTxn(view, blueprint.Stitch)
 	return nil
-}
-
-func aclTxn(view db.Database, blueprintHandle stitch.Stitch) {
-	aclRow, err := view.GetACL()
-	if err != nil {
-		aclRow = view.InsertACL()
-	}
-
-	aclRow.Admin = resolveACLs(blueprintHandle.AdminACL)
-
-	var applicationPorts []db.PortRange
-	for _, conn := range blueprintHandle.Connections {
-		if conn.From == stitch.PublicInternetLabel {
-			applicationPorts = append(applicationPorts, db.PortRange{
-				MinPort: conn.MinPort,
-				MaxPort: conn.MaxPort,
-			})
-		}
-	}
-	aclRow.ApplicationPorts = applicationPorts
-
-	view.Commit(aclRow)
 }
 
 // toDBMachine converts machines specified in the Stitch into db.Machines that can
@@ -197,21 +173,4 @@ func machineTxn(view db.Database, stitch stitch.Stitch, adminKey string) {
 		dbMachine.Preemptible = stitchMachine.Preemptible
 		view.Commit(dbMachine)
 	}
-}
-
-func resolveACLs(acls []string) []string {
-	var result []string
-	for _, acl := range acls {
-		if acl == "local" {
-			ip, err := myIP()
-			if err != nil {
-				log.WithError(err).Warn("Failed to get IP address.")
-				continue
-			}
-			acl = ip + "/32"
-		}
-		result = append(result, acl)
-	}
-
-	return result
 }

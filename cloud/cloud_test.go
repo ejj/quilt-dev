@@ -9,6 +9,7 @@ import (
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
+	"github.com/quilt/quilt/stitch"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -602,13 +603,13 @@ func TestACLs(t *testing.T) {
 	}
 
 	clst := newTestCloud("ns")
-	clst.syncACLs([]string{"admin"},
-		[]db.PortRange{
+	clst.syncACLs(
+		[]acl.ACL{
 			{
+				CidrIP:  "local",
 				MinPort: 80,
 				MaxPort: 80,
-			},
-		},
+			}},
 		[]db.Machine{
 			{
 				Provider: FakeAmazon,
@@ -621,29 +622,67 @@ func TestACLs(t *testing.T) {
 
 	exp := []acl.ACL{
 		{
-			CidrIP:  "admin",
-			MinPort: 1,
-			MaxPort: 65535,
-		},
-		{
 			CidrIP:  "5.6.7.8/32",
-			MinPort: 1,
-			MaxPort: 65535,
-		},
-		{
-			CidrIP:  "0.0.0.0/0",
 			MinPort: 80,
 			MaxPort: 80,
-		},
-		{
-			CidrIP:  "8.8.8.8/32",
-			MinPort: 1,
-			MaxPort: 65535,
 		},
 	}
 	inst := launchLoc{FakeAmazon, testRegion}
 	actual := clst.providers[inst].(*fakeProvider).aclRequests
 	assert.Equal(t, exp, actual)
+}
+
+func TestGetACLs(t *testing.T) {
+	cld := newTestCloud("ns")
+
+	exp := map[acl.ACL]struct{}{
+		{CidrIP: "local", MinPort: 1, MaxPort: 65535}: {},
+	}
+
+	// Empty blueprint should have "local" added to it.
+	acls := cld.getACLs(db.Blueprint{}, nil)
+	assert.Equal(t, exp, acls)
+
+	// A blueprint with local, shouldn't have it added a second time.
+	acls = cld.getACLs(db.Blueprint{
+		Stitch: stitch.Stitch{AdminACL: []string{"local"}},
+	}, nil)
+	assert.Equal(t, exp, acls)
+
+	// Connections that aren't to or from public, shouldn't affect the acls.
+	acls = cld.getACLs(db.Blueprint{
+		Stitch: stitch.Stitch{
+			Connections: []stitch.Connection{{
+				From:    "foo",
+				To:      "bar",
+				MinPort: 5,
+				MaxPort: 6,
+			}},
+		},
+	}, nil)
+	assert.Equal(t, exp, acls)
+
+	// Connections from public create an ACL.
+	acls = cld.getACLs(db.Blueprint{
+		Stitch: stitch.Stitch{
+			Connections: []stitch.Connection{{
+				From:    stitch.PublicInternetLabel,
+				To:      "bar",
+				MinPort: 1,
+				MaxPort: 2,
+			}},
+		},
+	}, nil)
+	exp[acl.ACL{CidrIP: "0.0.0.0/0", MinPort: 1, MaxPort: 2}] = struct{}{}
+	assert.Equal(t, exp, acls)
+
+	// Machines have holes opened up for them.
+	exp = map[acl.ACL]struct{}{
+		{CidrIP: "local", MinPort: 1, MaxPort: 65535}:      {},
+		{CidrIP: "1.2.3.4/32", MinPort: 1, MaxPort: 65535}: {},
+	}
+	acls = cld.getACLs(db.Blueprint{}, []db.Machine{{PublicIP: "1.2.3.4"}})
+	assert.Equal(t, exp, acls)
 }
 
 func TestUpdateCloud(t *testing.T) {

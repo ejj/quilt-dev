@@ -53,7 +53,6 @@ func TestAllTablesNoPanic(t *testing.T) {
 		view.InsertPlacement()
 		view.InsertContainer()
 		view.InsertConnection()
-		view.InsertACL()
 
 		return nil
 	})

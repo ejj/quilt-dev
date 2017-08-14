@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/quilt/quilt/db"
@@ -15,7 +14,6 @@ func TestEngine(t *testing.T) {
 
 	stc := stitch.Stitch{
 		Namespace: "namespace",
-		AdminACL:  []string{"1.2.3.4/32"},
 		Machines: []stitch.Machine{
 			{Provider: "Amazon", Size: "m4.large", Role: "Master", ID: "1"},
 			{Provider: "Amazon", Size: "m4.large", Role: "Master", ID: "2"},
@@ -25,9 +23,6 @@ func TestEngine(t *testing.T) {
 		},
 	}
 	updateStitch(t, conn, stc, "")
-	acl, err := selectACL(conn)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(acl.Admin))
 
 	masters, workers := selectMachines(conn)
 	assert.Equal(t, 2, len(masters))
@@ -263,34 +258,6 @@ func TestSort(t *testing.T) {
 	})
 }
 
-func TestACLs(t *testing.T) {
-	conn := db.New()
-
-	stc := stitch.Stitch{
-		AdminACL: []string{"1.2.3.4/32", "local"},
-		Machines: []stitch.Machine{
-			{Provider: "Amazon", Role: "Master"},
-			{Provider: "Amazon", Role: "worker"},
-		},
-	}
-
-	myIP = func() (string, error) {
-		return "5.6.7.8", nil
-	}
-	updateStitch(t, conn, stc, "")
-	acl, err := selectACL(conn)
-	assert.Nil(t, err)
-	assert.Equal(t, []string{"1.2.3.4/32", "5.6.7.8/32"}, acl.Admin)
-
-	myIP = func() (string, error) {
-		return "", errors.New("")
-	}
-	updateStitch(t, conn, stc, "")
-	acl, err = selectACL(conn)
-	assert.Nil(t, err)
-	assert.Equal(t, []string{"1.2.3.4/32"}, acl.Admin)
-}
-
 func selectMachines(conn db.Conn) (masters, workers []db.Machine) {
 	conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		masters = view.SelectFromMachine(func(m db.Machine) bool {
@@ -300,14 +267,6 @@ func selectMachines(conn db.Conn) (masters, workers []db.Machine) {
 			return m.Role == db.Worker
 		})
 		return nil
-	})
-	return
-}
-
-func selectACL(conn db.Conn) (acl db.ACL, err error) {
-	err = conn.Txn(db.AllTables...).Run(func(view db.Database) error {
-		acl, err = view.GetACL()
-		return err
 	})
 	return
 }
