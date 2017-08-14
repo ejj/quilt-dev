@@ -63,13 +63,14 @@ var sleep = time.Sleep
 // needed.
 func Run(conn db.Conn, creds connection.Credentials, minionTLSDir string) {
 	cfg.MinionTLSDir = minionTLSDir
+	foreman.Credentials = creds
 
 	go updateMachineStatuses(conn)
 	var cld *cloud
 	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable,
 		db.ACLTable).C {
 		c.Inc("Run")
-		cld = updateCloud(conn, cld, creds)
+		cld = updateCloud(conn, cld)
 
 		// Somewhat of a crude rate-limit of once every five seconds to avoid
 		// stressing out the cloud providers with too many API calls.
@@ -77,7 +78,7 @@ func Run(conn db.Conn, creds connection.Credentials, minionTLSDir string) {
 	}
 }
 
-func updateCloud(conn db.Conn, cld *cloud, creds connection.Credentials) *cloud {
+func updateCloud(conn db.Conn, cld *cloud) *cloud {
 	namespace, err := conn.GetBlueprintNamespace()
 	if err != nil {
 		return cld
@@ -86,7 +87,7 @@ func updateCloud(conn db.Conn, cld *cloud, creds connection.Credentials) *cloud 
 	if cld == nil || cld.namespace != namespace {
 		cld = newCloud(conn, namespace)
 		cld.runOnce()
-		foreman.Init(cld.conn, creds)
+		foreman.Init(cld.conn)
 	}
 
 	cld.runOnce()

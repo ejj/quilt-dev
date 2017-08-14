@@ -649,11 +649,11 @@ func TestACLs(t *testing.T) {
 func TestUpdateCloud(t *testing.T) {
 	conn := db.New()
 
-	clst := updateCloud(conn, nil, nil)
+	clst := updateCloud(conn, nil)
 	assert.Nil(t, clst)
 
 	setNamespace(conn, "ns1")
-	clst = updateCloud(conn, clst, nil)
+	clst = updateCloud(conn, clst)
 	assert.NotNil(t, clst)
 	assert.Equal(t, "ns1", clst.namespace)
 
@@ -675,7 +675,7 @@ func TestUpdateCloud(t *testing.T) {
 	oldClst := clst
 	oldAmzn := amzn
 
-	clst = updateCloud(conn, clst, nil)
+	clst = updateCloud(conn, clst)
 	assert.NotNil(t, clst)
 
 	// Pointers shouldn't have changed
@@ -700,7 +700,7 @@ func TestUpdateCloud(t *testing.T) {
 	oldClst = clst
 	oldAmzn = amzn
 	setNamespace(conn, "ns2")
-	clst = updateCloud(conn, clst, nil)
+	clst = updateCloud(conn, clst)
 	assert.NotNil(t, clst)
 
 	// Pointers should have changed
