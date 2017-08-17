@@ -1,6 +1,6 @@
 const quilt = require('@quilt/quilt');
 const hap = require('@quilt/haproxy');
-let infrastructure = require('../../config/infrastructure.js');
+const infrastructure = require('../../config/infrastructure.js');
 
 const indexPath = '/usr/share/nginx/html/index.html';
 
@@ -10,30 +10,30 @@ const indexPath = '/usr/share/nginx/html/index.html';
  * @return {Container} - A container with given content in its index file.
  */
 function containerWithContent(content) {
-  let files = {};
+  const files = {};
   files[indexPath] = content;
   return new quilt.Container('nginx').withFiles(files);
-};
+}
 
-let serviceA = new quilt.Service('serviceA', [
+const serviceA = new quilt.Service('serviceA', [
   containerWithContent('a1'),
   containerWithContent('a2'),
 ]);
 
-let serviceB = new quilt.Service('serviceB', [
+const serviceB = new quilt.Service('serviceB', [
   containerWithContent('b1'),
   containerWithContent('b2'),
   containerWithContent('b3'),
 ]);
 
-let proxy = hap.withURLrouting(2, {
+const proxy = hap.withURLrouting(2, {
   'serviceB.com': serviceB,
   'serviceA.com': serviceA,
 });
 
 proxy.allowFrom(quilt.publicInternet, 80);
 
-let inf = quilt.createDeployment();
+const inf = quilt.createDeployment();
 
 inf.deploy(infrastructure);
 inf.deploy(serviceA);

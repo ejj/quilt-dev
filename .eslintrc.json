@@ -1,0 +1,12 @@
+// Quilt uses Airbnb's JavaScript Style guide:
+// https://github.com/airbnb/javascript
+{
+    "extends": "airbnb-base",
+    "parserOptions": {
+        "ecmaVersion": 6
+    },
+    "rules": {
+      "no-console": "off",
+      "no-underscore-dangle": "off"
+    }
+}

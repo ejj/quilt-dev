@@ -1,12 +1,12 @@
 const quilt = require('@quilt/quilt');
 
-let nginx = require('@quilt/nginx');
-let infrastructure = require('../../config/infrastructure.js');
+const nginx = require('@quilt/nginx');
+const infrastructure = require('../../config/infrastructure.js');
 
-let deployment = quilt.createDeployment();
+const deployment = quilt.createDeployment();
 deployment.deploy(infrastructure);
 
-for (let i = 0; i < infrastructure.nWorker; i++) {
-    deployment.deploy(nginx.createService(80));
-    deployment.deploy(nginx.createService(8000));
+for (let i = 0; i < infrastructure.nWorker; i += 1) {
+  deployment.deploy(nginx.createService(80));
+  deployment.deploy(nginx.createService(8000));
 }

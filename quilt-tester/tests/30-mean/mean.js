@@ -1,14 +1,14 @@
 const quilt = require('@quilt/quilt');
-let haproxy = require('@quilt/haproxy');
-let Mongo = require('@quilt/mongo');
-let Node = require('@quilt/nodejs');
-let infrastructure = require('../../config/infrastructure.js');
+const haproxy = require('@quilt/haproxy');
+const Mongo = require('@quilt/mongo');
+const Node = require('@quilt/nodejs');
+const infrastructure = require('../../config/infrastructure.js');
 
-let deployment = quilt.createDeployment();
+const deployment = quilt.createDeployment();
 deployment.deploy(infrastructure);
 
-let mongo = new Mongo(3);
-let app = new Node({
+const mongo = new Mongo(3);
+const app = new Node({
   nWorker: 3,
   repo: 'https://github.com/tejasmanohar/node-todo.git',
   env: {
@@ -19,7 +19,7 @@ let app = new Node({
 
 // We should not need to access _app. We will fix this when we decide on a
 // general style.
-let proxy = haproxy.singleServiceLoadBalancer(3, app._app);
+const proxy = haproxy.singleServiceLoadBalancer(3, app._app);
 
 mongo.allowFrom(app, mongo.port);
 proxy.allowFrom(quilt.publicInternet, haproxy.exposedPort);

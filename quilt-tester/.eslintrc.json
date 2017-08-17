@@ -1,0 +1,8 @@
+// quilt-tester runs `npm install` for each test run, so we do not expect
+// imports to resolve until then. We therefore ignore the no-unresolved check.
+
+{
+  "rules": {
+    "import/no-unresolved": ["error", { "commonjs": false }]
+  }
+}

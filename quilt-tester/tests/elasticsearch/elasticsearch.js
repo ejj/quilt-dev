@@ -1,7 +1,7 @@
 const quilt = require('@quilt/quilt');
-let Elasticsearch = require('@quilt/elasticsearch').Elasticsearch;
-let infrastructure = require('../../config/infrastructure.js');
+const Elasticsearch = require('@quilt/elasticsearch').Elasticsearch;
+const infrastructure = require('../../config/infrastructure.js');
 
-let deployment = quilt.createDeployment();
+const deployment = quilt.createDeployment();
 deployment.deploy(infrastructure);
 deployment.deploy(new Elasticsearch(infrastructure.nWorker).allowFromPublic());

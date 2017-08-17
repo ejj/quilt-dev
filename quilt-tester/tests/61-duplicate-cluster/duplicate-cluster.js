@@ -1,12 +1,12 @@
 const quilt = require('@quilt/quilt');
-let spark = require('@quilt/spark');
-let infrastructure = require('../../config/infrastructure.js');
+const spark = require('@quilt/spark');
+const infrastructure = require('../../config/infrastructure.js');
 
-let deployment = quilt.createDeployment();
+const deployment = quilt.createDeployment();
 deployment.deploy(infrastructure);
 
-let sprk = new spark.Spark(1, 3);
-let sprk2 = new spark.Spark(1, 3);
+const sprk = new spark.Spark(1, 3);
+const sprk2 = new spark.Spark(1, 3);
 
 deployment.deploy(sprk);
 deployment.deploy(sprk2);
