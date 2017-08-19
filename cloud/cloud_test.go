@@ -647,6 +647,7 @@ func TestACLs(t *testing.T) {
 }
 
 func TestUpdateCloud(t *testing.T) {
+	mock()
 	conn := db.New()
 
 	clst := updateCloud(conn, nil)
