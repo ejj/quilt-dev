@@ -5,7 +5,6 @@ const fs = require('fs');
 const inquirer = require('inquirer');
 const consts = require('./constants');
 const Provider = require('./provider');
-const util = require('../../../util/util');
 
 
 /**
@@ -87,7 +86,7 @@ function infraNamePrompt() {
       },
       default: false,
       when(answers) {
-        return fs.existsSync(util.infraPath(answers[consts.name]));
+        return fs.existsSync(infraPath(answers[consts.name]));
       },
     },
   ];

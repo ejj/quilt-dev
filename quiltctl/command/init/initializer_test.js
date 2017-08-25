@@ -12,16 +12,8 @@ const initializer = rewire('./initializer');
 const Provider = rewire('./provider');
 
 describe('Initializer', () => {
-  let revertUtil;
   before(() => {
-    let utilMock = {
-      log: sinon.stub(),
-    };
-    revertUtil = initializer.__set__('util', utilMock);
-  });
-
-  after(() => {
-    revertUtil();
+    initializer.__set__('log', sinon.stub());
   });
 
   describe('writeProviderCreds()', function() {

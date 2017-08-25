@@ -6,15 +6,26 @@ const exit = require('process').exit;
 // be mocked out in tests.
 let fs = require('fs');
 let fsExtra = require('fs-extra');
+let log = console.log;
 
 const handlebars = require('handlebars');
 
-let util = require('../../../util/util');
 const prompter = require('./prompter');
 const consts = require('./constants');
 
 const templateDir = path.join(__dirname, 'templates');
 const infraTemplateFile = path.join(templateDir, 'inf_template');
+const infraDirectory = path.join(os.homedir(), '.quilt', 'infra');
+
+/**
+  * Returns the absolute path to the infrastructure with the given name.
+  *
+  * @param {string} infraName The name of the infrastructure.
+  * @return {string} The absolute path to the infrastructure file.
+  */
+function infraPath(infraName) {
+  return path.join(infraDirectory, `${infraName}.js`);
+}
 
 /**
   * Creates a file from the given template and context, and writes the result to
@@ -103,7 +114,7 @@ function writeProviderCreds(provider, answers) {
     });
   }
 
-  util.log(`Wrote credentials to ${credentialsDest}`);
+  log(`Wrote credentials to ${credentialsDest}`);
 }
 
 /**
@@ -122,8 +133,7 @@ function getSshKey(answers) {
 
     case consts.sshGenerateKey:
       sshGenerateKeyPair();
-      util.log(
-        `Created SSH key pair in ${consts.quiltSshKeyLocationPrivate}`);
+      log(`Created SSH key pair in ${consts.quiltSshKeyLocationPrivate}`);
       keyPath = consts.quiltSshKeyLocationPublic;
       break;
 
@@ -146,8 +156,8 @@ function getSshKey(answers) {
   * @return {void}
   */
 function processAnswers(provider, answers) {
-  fsExtra.mkdirp(util.infraDirectory, (err) => {
-    if (err) throw new Error(`Failed to create ${util.infraDirectory}: ${err}`);
+  fsExtra.mkdirp(infraDirectory, (err) => {
+    if (err) throw new Error(`Failed to create ${infraDirectory}: ${err}`);
   });
 
   writeProviderCreds(provider, answers);
@@ -164,9 +174,9 @@ function processAnswers(provider, answers) {
     [consts.workerCount]: answers[consts.workerCount],
   };
 
-  const outputPath = util.infraPath(answers[consts.name]);
+  const outputPath = infraPath(answers[consts.name]);
   createFileFromTemplate(infraTemplateFile, config, outputPath);
-  util.log(`Created infrastructure in ${outputPath}`);
+  log(`Created infrastructure in ${outputPath}`);
 }
 
 /**
