@@ -13,11 +13,10 @@ LINE_LENGTH_EXCLUDE=./api/pb/pb.pb.go \
 		    ./minion/ovsdb/mocks/Client.go \
 		    ./minion/pb/pb.pb.go \
 		    ./node_modules/% \
-		    ./quilt-tester/tests/zookeeper/vendor/% \
-		    ./stitch/bindings.js.go
+		    ./quilt-tester/tests/zookeeper/vendor/%
 
-JS_LINT_COMMAND = node_modules/eslint/bin/eslint.js \
-                  stitch/ quilt-tester/ quiltctl/command/init/ util/
+JS_LINT_COMMAND = node_modules/eslint/bin/eslint.js js quilt-tester
+
 REPO = quilt
 DOCKER = docker
 SHELL := /bin/bash
@@ -163,3 +162,12 @@ docker-build-ovs:
 
 # Include all .mk files so you can have your own local configurations
 include $(wildcard *.mk)
+
+# Prepare the js/install directory for either `npm install` or `npm publish`.
+prep-install: linux darwin js/install/package.json
+	cp quilt_linux js/install
+	cp quilt_darwin js/install
+	cp -r js/initializer js/install
+
+js/install/package.json: js/install/package_template.json
+	node js/install/make_package.js > js/install/package.json

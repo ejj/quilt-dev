@@ -34,8 +34,8 @@ describe('Initializer', () => {
       });
 
       mock({
-        'quiltctl/command/init/templates/aTemplate': '{{key}}-{{secret}}',
-        'quiltctl/command/init/providers.json': `{
+        'js/initializer/templates/aTemplate': '{{key}}-{{secret}}',
+        'js/initializer/providers.json': `{
     "provider": {
       "credsLocation": [".some", "file"]
     }

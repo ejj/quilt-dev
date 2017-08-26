@@ -1,0 +1,14 @@
+{
+  "name": "@quilt/install",
+  "version": "0.2.0",
+  "homepage": "http://quilt.io",
+  "license": "MIT",
+  "preferGlobal": true,
+  "scripts": {
+    "preinstall": "node install.js"
+  },
+  "bin": {
+    "quilt": "quilt",
+    "quilt-initializer.js": "./initializer/initializer.js"
+  }
+}
