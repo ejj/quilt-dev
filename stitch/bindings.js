@@ -470,9 +470,9 @@ function getString(argName, arg) {
 /**
  * @param {string} argName - The name of `arg` (for logging).
  * @param {Object.<string, string>} arg - The map of strings.
- * @return {Deployment} An empty object if `arg` is not defined, and
- *   otherwise ensures that `arg` is an object with string keys and values and
- *   then returns it.
+ * @return {Object.<string, string>} An empty object if `arg` is not defined,
+ *   and otherwise ensures that `arg` is an object with string keys and values
+ *   and then returns it.
  */
 function getStringMap(argName, arg) {
   if (arg === undefined) {
