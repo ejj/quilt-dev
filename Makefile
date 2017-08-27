@@ -83,7 +83,8 @@ go-coverage:
 	done
 
 js-coverage:
-	npm run-script cov > bindings.lcov
+	./node_modules/.bin/nyc npm test
+	./node_modules/.bin/nyc report --reporter=text-lcov > coverage.lcov
 
 coverage: go-coverage js-coverage
 
