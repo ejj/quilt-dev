@@ -1,8 +1,13 @@
 {
+  "name": "@quilt/quilt",
+  "version": "0.0.6",
+  "main": "stitch/bindings.js",
+  "files": [
+    "stitch/bindings.js"
+  ],
+  "license": "MIT",
   "devDependencies": {
-    "@quilt/quilt": "file:./js/bindings",
-    "@quilt/install": "file:./js/initializer",
-    "chai": "^4.1.1",
+    "chai": "^3.5.0",
     "chai-subset": "^1.5.0",
     "eslint": "^4.2.0",
     "eslint-config-airbnb-base": "^11.3.1",
@@ -14,7 +19,16 @@
     "sinon": "^2.1.0"
   },
   "scripts": {
-    "test": "mocha ./js/bindings ./js/initializer/"
+    "test": "mocha ./stitch ./quiltctl/command/init/"
+  },
+  "dependencies": {
+    "fs-extra": "^4.0.1",
+    "handlebars": "^4.0.10",
+    "inquirer": "^3.2.1",
+    "json-stable-stringify": "^1.0.1",
+    "mkdirp": "^0.5.1",
+    "sync-request": "^4.0.1",
+    "underscore": "^1.8.3"
   },
   "nyc": {
     "exclude": "**/*_test.js"

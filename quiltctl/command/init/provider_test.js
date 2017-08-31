@@ -29,7 +29,7 @@ describe('Provider', () => {
     });
 
     mock({
-      'js/initializer/providers.json': `{
+      'quiltctl/command/init/providers.json': `{
   "providerA": {
     "sizes": {
       "small": "size1",
