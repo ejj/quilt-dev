@@ -38,16 +38,31 @@ func TestMinionLogs(t *testing.T) {
 		}
 		outputStr := string(logsOutput)
 		fmt.Println(outputStr)
+		checkString(t, outputStr)
+	}
+}
 
-		// "goroutine 0" is the main goroutine, and is thus always printed in
-		// stacktraces.
+func checkString(t *testing.T, str string) {
+	for _, line := range strings.Split(str, "\n") {
+		// Errors pulling an image are completely out of our control.  They
+		// should still be logged as warnings to the user, but they shouldn't
+		// cause a test failure.
+		if strings.Contains(line, "pull image error") {
+			fmt.Printf("Ignoring pull image error: %s\n", line)
+			continue
+		}
+
+		// "goroutine 0" is the main goroutine and is printed in stacktraces.
+		if strings.Contains(line, "goroutine 0") {
+			t.Error("Minion logs has a stack trace")
+		}
+
 		// The trailing open bracket is necessary to filter out false positives
 		// in the log output. For example, as part of logging DNS requests, the
 		// status string NOERROR is printed.
-		if strings.Contains(outputStr, "goroutine 0") ||
-			strings.Contains(outputStr, "ERROR [") ||
-			strings.Contains(outputStr, "WARN [") {
-			t.Fatal("minion has error logs")
+		if strings.Contains(line, "ERROR [") ||
+			strings.Contains(line, "WARN [") {
+			t.Errorf("Minion logs has error: %s", line)
 		}
 	}
 }
