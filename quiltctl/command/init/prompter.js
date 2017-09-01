@@ -268,7 +268,7 @@ function machineConfigPrompts(provider) {
       type: 'confirm',
       name: consts.preemptible,
       message: 'Do you want to run preemptible instances?',
-      default: true,
+      default: false,
       when() {
         return provider.hasPreemptible;
       },
