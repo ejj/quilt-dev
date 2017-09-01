@@ -1,7 +1,7 @@
 {
   "Amazon": {
     "sizes": {
-      "tiny - does not work with spot instances": "t2.micro",
+      "tiny - does not work with preemptible instances": "t2.micro",
       "small": "m3.medium",
       "medium": "m3.large",
       "large": "m3.xlarge"
