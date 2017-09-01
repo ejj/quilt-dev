@@ -2,6 +2,7 @@ package docker
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -255,8 +256,7 @@ func (dk Client) Pull(image string) error {
 		InactivityTimeout: networkTimeout,
 	}
 	if err := dk.PullImage(opts, dkc.AuthConfiguration{}); err != nil {
-		log.WithField("image", image).WithError(err).Error("Failed image pull")
-		return err
+		return fmt.Errorf("pull image error: %s", err)
 	}
 
 	entry.expiration = time.Now().Add(pullCacheTimeout)
