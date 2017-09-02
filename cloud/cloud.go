@@ -3,7 +3,6 @@ package cloud
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -36,22 +35,13 @@ type provider interface {
 
 var c = counter.New("Cloud")
 
-type launchLoc struct {
-	provider db.ProviderName
-	region   string
-}
-
-func (loc launchLoc) String() string {
-	if loc.region == "" {
-		return string(loc.provider)
-	}
-	return fmt.Sprintf("%s-%s", loc.provider, loc.region)
-}
-
 type cloud struct {
-	namespace string
-	conn      db.Conn
-	providers map[launchLoc]provider
+	conn db.Conn
+
+	namespace    string
+	providerName db.ProviderName
+	region       string
+	provider     provider
 }
 
 var myIP = util.MyIP
@@ -64,52 +54,89 @@ func Run(conn db.Conn, creds connection.Credentials, minionTLSDir string) {
 	foreman.Credentials = creds
 
 	go updateMachineStatuses(conn)
-	var cld *cloud
-	for range conn.TriggerTick(30, db.BlueprintTable, db.MachineTable).C {
-		c.Inc("Run")
-		cld = updateCloud(conn, cld)
 
-		// Somewhat of a crude rate-limit of once every five seconds to avoid
-		// stressing out the cloud providers with too many API calls.
-		sleep(5 * time.Second)
-	}
-}
+	var ns string
+	foreman.Init(conn)
+	stop := make(chan struct{})
+	for range conn.TriggerTick(60, db.BlueprintTable, db.MachineTable).C {
+		newns, _ := conn.GetBlueprintNamespace()
+		if newns == ns {
+			foreman.RunOnce(conn)
+			sleep(5 * time.Second) // Rate-limit the foreman.
+			continue
+		}
 
-func updateCloud(conn db.Conn, cld *cloud) *cloud {
-	namespace, err := conn.GetBlueprintNamespace()
-	if err != nil {
-		return cld
-	}
+		log.Debugf("Namespace change from \"%s\", to \"%s\".", ns, newns)
+		ns = newns
 
-	if cld == nil || cld.namespace != namespace {
-		cld = newCloud(conn, namespace)
-		cld.runOnce()
-		foreman.Init(cld.conn)
-	}
-
-	cld.runOnce()
-	foreman.RunOnce(cld.conn)
-
-	return cld
-}
-
-func newCloud(conn db.Conn, namespace string) *cloud {
-	cld := &cloud{
-		namespace: namespace,
-		conn:      conn,
-		providers: make(map[launchLoc]provider),
-	}
-
-	for _, p := range db.AllProviders {
-		for _, r := range validRegions(p) {
-			if _, err := cld.getProvider(launchLoc{p, r}); err != nil {
-				log.Debugf("Failed to connect to provider %s in %s: %s",
-					p, r, err)
-			}
+		if ns != "" {
+			close(stop)
+			stop = make(chan struct{})
+			makeClouds(conn, ns, stop)
+			foreman.Init(conn)
 		}
 	}
+}
 
-	return cld
+func makeClouds(conn db.Conn, ns string, stop chan struct{}) {
+	for _, p := range db.AllProviders {
+		for _, r := range validRegions(p) {
+			cld, err := newCloud(conn, p, r, ns)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error":  err,
+					"region": cld.String(),
+				}).Debug("failed to create cloud provider")
+				continue
+			}
+			go cld.run(stop)
+		}
+	}
+}
+
+func newCloud(conn db.Conn, pName db.ProviderName, region, ns string) (cloud, error) {
+	cld := cloud{
+		conn:         conn,
+		namespace:    ns,
+		region:       region,
+		providerName: pName,
+	}
+
+	var err error
+	cld.provider, err = newProvider(pName, ns, region)
+	if err != nil {
+		return cld, fmt.Errorf("failed to connect: %s", err)
+	}
+	return cld, nil
+}
+
+func (cld cloud) run(stop <-chan struct{}) {
+	log.Debugf("Start Cloud %s", cld)
+
+	trigger := cld.conn.TriggerTick(60, db.BlueprintTable, db.MachineTable)
+	defer trigger.Stop()
+
+	for {
+		select {
+		case <-stop:
+		case <-trigger.C:
+		}
+
+		// In a race between a closed stop and a trigger, choose stop.
+		select {
+		case <-stop:
+			log.Debugf("Stop Cloud %s", cld)
+			return
+		default:
+		}
+
+		cld.runOnce()
+		cld.runOnce()
+
+		// Somewhat of a crude rate-limit of once every five seconds to
+		// avoid stressing out the cloud providers with too many calls.
+		sleep(5 * time.Second)
+	}
 }
 
 func (cld cloud) runOnce() {
@@ -138,7 +165,7 @@ func (cld cloud) runOnce() {
 			// are in the cloud.  If we didn't, inter-machine ACLs could get
 			// removed when the Quilt controller restarts, even if there are
 			// running cloud machines that still need to communicate.
-			cld.syncACLs(jr.acls, jr.machines)
+			cld.syncACLs(jr.acls)
 			return
 		}
 
@@ -178,45 +205,23 @@ func (cld cloud) updateCloud(machines []db.Machine, fn machineAction, action str
 		return
 	}
 
-	log.WithFields(log.Fields{
+	logFields := log.Fields{
 		"count":  len(machines),
 		"action": action,
-	}).Info("Updating cloud")
-
-	noFailures := true
-	groupedMachines := groupByLoc(machines)
-	for loc, providerMachines := range groupedMachines {
-		providerInst, err := cld.getProvider(loc)
-		if err != nil {
-			noFailures = false
-			log.Warnf("Provider %s is unavailable in %s: %s",
-				loc.provider, loc.region, err)
-			continue
-		}
-
-		c.Inc(action)
-		if err := fn(providerInst, providerMachines); err != nil {
-			noFailures = false
-			log.WithFields(log.Fields{
-				"count":    len(machines),
-				"action":   action,
-				"provider": loc,
-				"error":    err,
-			}).Warn("Failed to update cloud")
-		}
+		"region": cld.String(),
 	}
 
-	if noFailures {
-		log.WithField("action", action).Info("Successfully updated cloud")
+	c.Inc(action)
+	if err := fn(cld.provider, machines); err != nil {
+		logFields["error"] = err
+		log.WithFields(logFields).Errorf("Failed to update machines.")
 	} else {
-		log.Infof("Due to failures, sleeping for 1 minute")
-		sleep(60 * time.Second)
+		log.WithFields(logFields).Infof("Updated machines.")
 	}
 }
 
 type joinResult struct {
-	machines []db.Machine
-	acls     []acl.ACL
+	acls []acl.ACL
 
 	boot      []db.Machine
 	terminate []db.Machine
@@ -246,10 +251,17 @@ func (cld cloud) join() (joinResult, error) {
 			return err
 		}
 
-		res.machines = view.SelectFromMachine(nil)
+		var machines []db.Machine
+		allMachines := view.SelectFromMachine(nil)
+		for _, m := range allMachines {
+			if m.Provider == cld.providerName && m.Region == cld.region {
+				machines = append(machines, m)
+			}
+		}
+
 		cloudMachines = getMachineRoles(cloudMachines)
 
-		dbResult := syncDB(cloudMachines, res.machines)
+		dbResult := syncDB(cloudMachines, machines)
 		res.boot = dbResult.boot
 		res.terminate = dbResult.stop
 		res.updateIPs = dbResult.updateIPs
@@ -274,8 +286,11 @@ func (cld cloud) join() (joinResult, error) {
 			view.Commit(dbm)
 		}
 
-		for acl := range cld.getACLs(bp, res.machines) {
-			res.acls = append(res.acls, acl)
+		// Regions with no machines in them should have their ACLs cleared.
+		if len(machines) > 0 {
+			for acl := range cld.getACLs(bp, allMachines) {
+				res.acls = append(res.acls, acl)
+			}
 		}
 
 		return nil
@@ -322,40 +337,23 @@ func (cld cloud) getACLs(bp db.Blueprint, machines []db.Machine) map[acl.ACL]str
 	return aclSet
 }
 
-func (cld cloud) syncACLs(unresolvedACLs []acl.ACL, machines []db.Machine) {
-	ip, err := myIP()
-	if err != nil {
-		log.WithError(err).Error("Couldn't retrieve our IP address.")
-		return
-	}
-
+func (cld cloud) syncACLs(unresolvedACLs []acl.ACL) {
 	var acls []acl.ACL
 	for _, acl := range unresolvedACLs {
 		if acl.CidrIP == "local" {
+			ip, err := myIP()
+			if err != nil {
+				log.WithError(err).Error("Failed to retrive local IP.")
+				return
+			}
 			acl.CidrIP = ip + "/32"
 		}
 		acls = append(acls, acl)
 	}
 
-	// Providers with at least one machine.
-	prvdrSet := map[launchLoc]struct{}{}
-	for _, m := range machines {
-		prvdrSet[launchLoc{m.Provider, m.Region}] = struct{}{}
-	}
-
-	for loc, prvdr := range cld.providers {
-		// For providers with no specified machines, we remove all ACLs.
-		// Otherwise we set acls to what's specified.
-		var setACLs []acl.ACL
-		if _, ok := prvdrSet[loc]; ok {
-			setACLs = acls
-		}
-
-		c.Inc("SetACLs")
-		if err := prvdr.SetACLs(setACLs); err != nil {
-			log.WithError(err).Warnf("Could not update ACLs on %s in %s.",
-				loc.provider, loc.region)
-		}
+	c.Inc("SetACLs")
+	if err := cld.provider.SetACLs(acls); err != nil {
+		log.WithError(err).Warnf("Could not update ACLs in %s.", cld)
 	}
 }
 
@@ -434,52 +432,21 @@ func syncDB(cms []db.Machine, dbms []db.Machine) syncDBResult {
 	return ret
 }
 
-type listResponse struct {
-	loc      launchLoc
-	machines []db.Machine
-	err      error
-}
-
 func (cld cloud) get() ([]db.Machine, error) {
-	var wg sync.WaitGroup
-	cloudMachinesChan := make(chan listResponse, len(cld.providers))
-	for loc, p := range cld.providers {
-		wg.Add(1)
-		go func(loc launchLoc, p provider) {
-			defer wg.Done()
-			c.Inc("List")
-			machines, err := p.List()
-			cloudMachinesChan <- listResponse{loc, machines, err}
-		}(loc, p)
+	c.Inc("List")
+
+	machines, err := cld.provider.List()
+	if err != nil {
+		return nil, fmt.Errorf("list %s: %s", cld, err)
 	}
-	wg.Wait()
-	close(cloudMachinesChan)
 
 	var cloudMachines []db.Machine
-	for res := range cloudMachinesChan {
-		if res.err != nil {
-			return nil, fmt.Errorf("list %s: %s", res.loc, res.err)
-		}
-		for _, m := range res.machines {
-			m.Provider = res.loc.provider
-			m.Region = res.loc.region
-			cloudMachines = append(cloudMachines, m)
-		}
+	for _, m := range machines {
+		m.Provider = cld.providerName
+		m.Region = cld.region
+		cloudMachines = append(cloudMachines, m)
 	}
 	return cloudMachines, nil
-}
-
-func (cld cloud) getProvider(loc launchLoc) (provider, error) {
-	p, ok := cld.providers[loc]
-	if ok {
-		return p, nil
-	}
-
-	p, err := newProvider(loc.provider, cld.namespace, loc.region)
-	if err == nil {
-		cld.providers[loc] = p
-	}
-	return p, err
 }
 
 func getMachineRoles(machines []db.Machine) (withRoles []db.Machine) {
@@ -488,16 +455,6 @@ func getMachineRoles(machines []db.Machine) (withRoles []db.Machine) {
 		withRoles = append(withRoles, m)
 	}
 	return withRoles
-}
-
-func groupByLoc(machines []db.Machine) map[launchLoc][]db.Machine {
-	machineMap := map[launchLoc][]db.Machine{}
-	for _, m := range machines {
-		loc := launchLoc{m.Provider, m.Region}
-		machineMap[loc] = append(machineMap[loc], m)
-	}
-
-	return machineMap
 }
 
 func newProviderImpl(p db.ProviderName, namespace, region string) (provider, error) {
@@ -528,6 +485,10 @@ func validRegionsImpl(p db.ProviderName) []string {
 	default:
 		panic("Unimplemented")
 	}
+}
+
+func (cld cloud) String() string {
+	return fmt.Sprintf("%s-%s-%s", cld.providerName, cld.region, cld.namespace)
 }
 
 // Stored in variables so they may be mocked out

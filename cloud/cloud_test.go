@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -18,11 +19,13 @@ var FakeVagrant db.ProviderName = "FakeVagrant"
 var testRegion = "Fake region"
 
 type fakeProvider struct {
-	namespace   string
-	machines    map[string]db.Machine
-	roles       map[string]db.Role
-	idCounter   int
-	cloudConfig string
+	providerName db.ProviderName
+	region       string
+	namespace    string
+	machines     map[string]db.Machine
+	roles        map[string]db.Role
+	idCounter    int
+	cloudConfig  string
 
 	bootRequests []db.Machine
 	stopRequests []string
@@ -103,10 +106,11 @@ func (p *fakeProvider) UpdateFloatingIPs(machines []db.Machine) error {
 	return nil
 }
 
-func newTestCloud(namespace string) *cloud {
+func newTestCloud(provider db.ProviderName, region, namespace string) *cloud {
 	sleep = func(t time.Duration) {}
 	mock()
-	return newCloud(db.New(), namespace)
+	cld, _ := newCloud(db.New(), provider, region, namespace)
+	return &cld
 }
 
 func TestPanicBadProvider(t *testing.T) {
@@ -118,7 +122,7 @@ func TestPanicBadProvider(t *testing.T) {
 	}()
 	db.AllProviders = []db.ProviderName{FakeAmazon}
 	conn := db.New()
-	newCloud(conn, "test")
+	newCloud(conn, FakeAmazon, testRegion, "test")
 }
 
 func TestSyncDB(t *testing.T) {
@@ -361,7 +365,7 @@ func TestSyncDB(t *testing.T) {
 
 }
 
-func TestSync(t *testing.T) {
+func TestCloudRunOnce(t *testing.T) {
 	type ipRequest struct {
 		id string
 		ip string
@@ -373,12 +377,9 @@ func TestSync(t *testing.T) {
 		updateIPs []ipRequest
 	}
 
-	checkSync := func(clst *cloud, provider db.ProviderName, region string,
-		expected assertion) {
-
-		clst.runOnce()
-		inst := launchLoc{provider, region}
-		providerInst := clst.providers[inst].(*fakeProvider)
+	checkSync := func(cld *cloud, expected assertion) {
+		cld.runOnce()
+		providerInst := cld.provider.(*fakeProvider)
 
 		assert.Equal(t, expected.boot, providerInst.bootRequests, "bootRequests")
 
@@ -395,9 +396,9 @@ func TestSync(t *testing.T) {
 	}
 
 	// Test initial boot
-	clst := newTestCloud("ns")
-	setNamespace(clst.conn, "ns")
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld := newTestCloud(FakeAmazon, testRegion, "ns")
+	setNamespace(cld.conn, "ns")
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		m := view.InsertMachine()
 		m.Role = db.Master
 		m.Provider = FakeAmazon
@@ -407,16 +408,15 @@ func TestSync(t *testing.T) {
 
 		return nil
 	})
-	checkSync(clst, FakeAmazon, testRegion,
-		assertion{boot: []db.Machine{{
-			Provider: FakeAmazon,
-			Region:   testRegion,
-			Size:     "m4.large",
-			Role:     db.Master},
-		}})
+	checkSync(cld, assertion{boot: []db.Machine{{
+		Provider: FakeAmazon,
+		Region:   testRegion,
+		Size:     "m4.large",
+		Role:     db.Master},
+	}})
 
 	// Test adding a machine with the same provider
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		m := view.InsertMachine()
 		m.Role = db.Master
 		m.Provider = FakeAmazon
@@ -426,36 +426,16 @@ func TestSync(t *testing.T) {
 
 		return nil
 	})
-	checkSync(clst, FakeAmazon, testRegion,
-		assertion{boot: []db.Machine{{
-			Provider: FakeAmazon,
-			Region:   testRegion,
-			Size:     "m4.xlarge",
-			Role:     db.Master},
-		}})
-
-	// Test adding a machine with a different provider
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
-		m := view.InsertMachine()
-		m.Role = db.Master
-		m.Provider = FakeVagrant
-		m.Region = testRegion
-		m.Size = "vagrant.large"
-		view.Commit(m)
-
-		return nil
-	})
-	checkSync(clst, FakeVagrant, testRegion,
-		assertion{boot: []db.Machine{{
-			Provider: FakeVagrant,
-			Region:   testRegion,
-			Size:     "vagrant.large",
-			Role:     db.Master},
-		}})
+	checkSync(cld, assertion{boot: []db.Machine{{
+		Provider: FakeAmazon,
+		Region:   testRegion,
+		Size:     "m4.xlarge",
+		Role:     db.Master},
+	}})
 
 	// Test removing a machine
 	var toRemove db.Machine
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		toRemove = view.SelectFromMachine(func(m db.Machine) bool {
 			return m.Provider == FakeAmazon && m.Size == "m4.xlarge"
 		})[0]
@@ -463,11 +443,10 @@ func TestSync(t *testing.T) {
 
 		return nil
 	})
-	checkSync(clst, FakeAmazon, testRegion,
-		assertion{stop: []string{toRemove.CloudID}})
+	checkSync(cld, assertion{stop: []string{toRemove.CloudID}})
 
 	// Test booting a machine with floating IP - shouldn't update FloatingIP yet
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		m := view.InsertMachine()
 		m.Role = db.Master
 		m.Provider = FakeAmazon
@@ -478,7 +457,7 @@ func TestSync(t *testing.T) {
 
 		return nil
 	})
-	checkSync(clst, FakeAmazon, testRegion, assertion{
+	checkSync(cld, assertion{
 		boot: []db.Machine{{
 			Provider: FakeAmazon,
 			Region:   testRegion,
@@ -488,12 +467,10 @@ func TestSync(t *testing.T) {
 
 	// The bootRequest from the previous test is done now, and a CloudID has
 	// been assigned, so we should also receive the ipRequest from before
-	checkSync(clst, FakeAmazon, testRegion, assertion{
-		updateIPs: []ipRequest{{id: "3", ip: "ip"}},
-	})
+	checkSync(cld, assertion{updateIPs: []ipRequest{{id: "3", ip: "ip"}}})
 
 	// Test assigning a floating IP to an existing machine
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		toAssign := view.SelectFromMachine(func(m db.Machine) bool {
 			return m.Provider == FakeAmazon &&
 				m.Size == "m4.large" &&
@@ -504,17 +481,10 @@ func TestSync(t *testing.T) {
 
 		return nil
 	})
-	checkSync(clst, FakeAmazon, testRegion, assertion{
-		updateIPs: []ipRequest{
-			{
-				id: "1",
-				ip: "another.ip",
-			},
-		},
-	})
+	checkSync(cld, assertion{updateIPs: []ipRequest{{id: "1", ip: "another.ip"}}})
 
 	// Test removing a floating IP
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		toUpdate := view.SelectFromMachine(func(m db.Machine) bool {
 			return m.Provider == FakeAmazon &&
 				m.Size == "m4.large" &&
@@ -525,15 +495,10 @@ func TestSync(t *testing.T) {
 
 		return nil
 	})
-	checkSync(clst, FakeAmazon, testRegion, assertion{
-		updateIPs: []ipRequest{{
-			id: "3",
-			ip: "",
-		}},
-	})
+	checkSync(cld, assertion{updateIPs: []ipRequest{{id: "3", ip: ""}}})
 
 	// Test removing and adding a machine
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		toRemove = view.SelectFromMachine(func(m db.Machine) bool {
 			return m.Provider == FakeAmazon && m.Size == "m4.large"
 		})[0]
@@ -548,7 +513,7 @@ func TestSync(t *testing.T) {
 
 		return nil
 	})
-	checkSync(clst, FakeAmazon, testRegion, assertion{
+	checkSync(cld, assertion{
 		boot: []db.Machine{{
 			Provider: FakeAmazon,
 			Region:   testRegion,
@@ -558,7 +523,7 @@ func TestSync(t *testing.T) {
 	})
 
 	// Test adding machine with different role
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		m := view.InsertMachine()
 		m.Role = db.Master
 		m.Provider = FakeAmazon
@@ -569,7 +534,7 @@ func TestSync(t *testing.T) {
 		return nil
 	})
 
-	checkSync(clst, FakeAmazon, testRegion, assertion{
+	checkSync(cld, assertion{
 		boot: []db.Machine{{
 			Provider: FakeAmazon,
 			Region:   testRegion,
@@ -577,7 +542,7 @@ func TestSync(t *testing.T) {
 			Role:     db.Master}},
 	})
 
-	clst.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
+	cld.conn.Txn(db.AllTables...).Run(func(view db.Database) error {
 		toRemove = view.SelectFromMachine(func(m db.Machine) bool {
 			return m.Role == db.Master && m.Size == "m4.xlarge" &&
 				m.Provider == FakeAmazon
@@ -593,7 +558,7 @@ func TestSync(t *testing.T) {
 		return nil
 	})
 
-	checkSync(clst, FakeAmazon, testRegion, assertion{
+	checkSync(cld, assertion{
 		boot: []db.Machine{{
 			Provider: FakeAmazon,
 			Region:   testRegion,
@@ -608,23 +573,8 @@ func TestACLs(t *testing.T) {
 		return "5.6.7.8", nil
 	}
 
-	clst := newTestCloud("ns")
-	clst.syncACLs(
-		[]acl.ACL{
-			{
-				CidrIP:  "local",
-				MinPort: 80,
-				MaxPort: 80,
-			}},
-		[]db.Machine{
-			{
-				Provider: FakeAmazon,
-				PublicIP: "8.8.8.8",
-				Region:   testRegion,
-			},
-			{},
-		},
-	)
+	clst := newTestCloud(FakeAmazon, testRegion, "ns")
+	clst.syncACLs([]acl.ACL{{CidrIP: "local", MinPort: 80, MaxPort: 80}})
 
 	exp := []acl.ACL{
 		{
@@ -633,13 +583,12 @@ func TestACLs(t *testing.T) {
 			MaxPort: 80,
 		},
 	}
-	inst := launchLoc{FakeAmazon, testRegion}
-	actual := clst.providers[inst].(*fakeProvider).aclRequests
+	actual := clst.provider.(*fakeProvider).aclRequests
 	assert.Equal(t, exp, actual)
 }
 
 func TestGetACLs(t *testing.T) {
-	cld := newTestCloud("ns")
+	cld := newTestCloud(FakeAmazon, testRegion, "ns")
 
 	exp := map[acl.ACL]struct{}{
 		{CidrIP: "local", MinPort: 1, MaxPort: 65535}: {},
@@ -691,168 +640,31 @@ func TestGetACLs(t *testing.T) {
 	assert.Equal(t, exp, acls)
 }
 
-func TestUpdateCloud(t *testing.T) {
-	mock()
-	conn := db.New()
+func TestMakeClouds(t *testing.T) {
+	stop := make(chan struct{})
+	makeClouds(db.New(), "ns", stop)
 
-	clst := updateCloud(conn, nil)
-	assert.Nil(t, clst)
-
-	setNamespace(conn, "ns1")
-	clst = updateCloud(conn, clst)
-	assert.NotNil(t, clst)
-	assert.Equal(t, "ns1", clst.namespace)
-
-	inst := launchLoc{FakeAmazon, testRegion}
-	amzn := clst.providers[inst].(*fakeProvider)
-	assert.Empty(t, amzn.bootRequests)
-	assert.Empty(t, amzn.stopRequests)
-	assert.Equal(t, "ns1", amzn.namespace)
-
-	conn.Txn(db.AllTables...).Run(func(view db.Database) error {
-		m := view.InsertMachine()
-		m.Provider = FakeAmazon
-		m.Size = "size1"
-		m.Region = testRegion
-		view.Commit(m)
-		return nil
-	})
-
-	oldClst := clst
-	oldAmzn := amzn
-
-	clst = updateCloud(conn, clst)
-	assert.NotNil(t, clst)
-
-	// Pointers shouldn't have changed
-	amzn = clst.providers[inst].(*fakeProvider)
-	assert.True(t, oldClst == clst)
-	assert.True(t, oldAmzn == amzn)
-
-	assert.Empty(t, amzn.stopRequests)
-	assert.Equal(t, []db.Machine{{
-		Provider: FakeAmazon,
-		Region:   testRegion,
-		Size:     "size1",
-	}}, amzn.bootRequests)
-	assert.Equal(t, "ns1", amzn.namespace)
-	amzn.clearLogs()
-
-	conn.Txn(db.AllTables...).Run(func(view db.Database) error {
-		dbms := view.SelectFromMachine(nil)
-		dbms[0].Size = "size2"
-		view.Commit(dbms[0])
-		return nil
-	})
-
-	oldClst = clst
-	oldAmzn = amzn
-	setNamespace(conn, "ns2")
-	clst = updateCloud(conn, clst)
-	assert.NotNil(t, clst)
-
-	// Pointers should have changed
-	amzn = clst.providers[inst].(*fakeProvider)
-	assert.True(t, oldClst != clst)
-	assert.True(t, oldAmzn != amzn)
-
-	assert.Equal(t, "ns1", oldAmzn.namespace)
-	assert.Empty(t, oldAmzn.bootRequests)
-	assert.Empty(t, oldAmzn.stopRequests)
-
-	assert.Equal(t, "ns2", amzn.namespace)
-	assert.Equal(t, []db.Machine{{
-		Provider: FakeAmazon,
-		Region:   testRegion,
-		Size:     "size2",
-	}}, amzn.bootRequests)
-	assert.Empty(t, amzn.stopRequests)
-}
-
-func TestMultiRegionDeploy(t *testing.T) {
-	clst := newTestCloud("ns")
-	clst.conn.Txn(db.MachineTable,
-		db.BlueprintTable).Run(func(view db.Database) error {
-
-		for _, p := range db.AllProviders {
-			for _, r := range validRegions(p) {
-				m := view.InsertMachine()
-				m.Provider = p
-				m.Region = r
-				m.Size = "size1"
-				view.Commit(m)
-			}
-		}
-
-		c := view.InsertBlueprint()
-		c.Namespace = "ns"
-		view.Commit(c)
-		return nil
-	})
-
-	for i := 0; i < 2; i++ {
-		clst.runOnce()
-		cloudMachines, err := clst.get()
-		assert.NoError(t, err)
-		dbMachines := clst.conn.SelectFromMachine(nil)
-		joinResult := syncDB(cloudMachines, dbMachines)
-
-		// All machines should be booted
-		assert.Empty(t, joinResult.boot)
-		assert.Empty(t, joinResult.stop)
-		assert.Len(t, joinResult.pairs, len(dbMachines))
+	var locations []string
+	for _, p := range instantiatedProviders {
+		loc := fmt.Sprintf("%s-%s-%s", p.providerName, p.region, p.namespace)
+		locations = append(locations, loc)
 	}
 
-	clst.conn.Txn(db.MachineTable).Run(func(view db.Database) error {
-		m := view.SelectFromMachine(func(m db.Machine) bool {
-			return m.Provider == FakeAmazon &&
-				m.Region == validRegions(FakeAmazon)[0]
-		})
-
-		assert.Len(t, m, 1)
-		view.Remove(m[0])
-		return nil
-	})
-
-	clst.runOnce()
-	machinesRemaining, err := clst.get()
-	assert.NoError(t, err)
-
-	assert.NotContains(t, machinesRemaining, db.Machine{
-		Provider: FakeAmazon,
-		Region:   validRegions(FakeAmazon)[0],
-		Size:     "size1",
-	})
-	cloudMachines, err := clst.get()
-	assert.NoError(t, err)
-	dbMachines := clst.conn.SelectFromMachine(nil)
-	joinResult := syncDB(cloudMachines, dbMachines)
-
-	assert.Empty(t, joinResult.boot)
-	assert.Empty(t, joinResult.stop)
-	assert.Len(t, joinResult.pairs, len(dbMachines))
+	// Verify that each cloud provider gets instantiated.
+	assert.Equal(t, []string{
+		"FakeAmazon-Fake region-ns",
+		"FakeAmazon-Fake region-ns",
+		"FakeVagrant-Fake region-ns"}, locations)
+	close(stop)
 }
 
 func TestGetError(t *testing.T) {
 	t.Parallel()
 
-	_, err := cloud{
-		providers: map[launchLoc]provider{
-			{db.Amazon, "us-west-1"}: &fakeProvider{
-				listError: errors.New("err"),
-			},
-		},
-	}.get()
-	assert.EqualError(t, err, "list Amazon-us-west-1: err")
-
-	_, err = cloud{
-		providers: map[launchLoc]provider{
-			{provider: db.Vagrant}: &fakeProvider{
-				listError: errors.New("err"),
-			},
-		},
-	}.get()
-	assert.EqualError(t, err, "list Vagrant: err")
+	cld := newTestCloud(FakeAmazon, testRegion, "ns")
+	cld.provider.(*fakeProvider).listError = errors.New("err")
+	_, err := cld.get()
+	assert.EqualError(t, err, "list FakeAmazon-Fake region-ns: err")
 }
 
 func setNamespace(conn db.Conn, ns string) {
@@ -868,14 +680,18 @@ func setNamespace(conn db.Conn, ns string) {
 	})
 }
 
+var instantiatedProviders []fakeProvider
+
 func mock() {
-	var instantiatedProviders []fakeProvider
+	instantiatedProviders = nil
 	newProvider = func(p db.ProviderName, namespace,
 		region string) (provider, error) {
 		ret := fakeProvider{
-			namespace: namespace,
-			machines:  make(map[string]db.Machine),
-			roles:     make(map[string]db.Role),
+			providerName: p,
+			region:       region,
+			namespace:    namespace,
+			machines:     make(map[string]db.Machine),
+			roles:        make(map[string]db.Role),
 		}
 		ret.clearLogs()
 

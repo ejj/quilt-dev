@@ -3,8 +3,6 @@ package cloud
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/quilt/quilt/db"
 )
 
@@ -65,20 +63,4 @@ func TestNewProviderFailure(t *testing.T) {
 		}
 	}()
 	newProviderImpl("FakeAmazon", testRegion, "namespace")
-}
-
-func TestGroupBy(t *testing.T) {
-	t.Parallel()
-
-	grouped := groupByLoc([]db.Machine{
-		{Provider: db.Google}, {Provider: db.Amazon}, {Provider: db.Google},
-		{Provider: db.Google},
-	})
-	assert.Equal(t, map[launchLoc][]db.Machine{
-		{db.Amazon, ""}: {{Provider: db.Amazon}},
-		{db.Google, ""}: {
-			{Provider: db.Google},
-			{Provider: db.Google},
-			{Provider: db.Google}},
-	}, grouped)
 }
