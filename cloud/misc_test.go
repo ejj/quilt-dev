@@ -70,12 +70,15 @@ func TestNewProviderFailure(t *testing.T) {
 func TestGroupBy(t *testing.T) {
 	t.Parallel()
 
-	grouped := groupByLoc([]joinMachine{
-		{provider: db.Google}, {provider: db.Amazon}, {provider: db.Google},
-		{provider: db.Google},
+	grouped := groupByLoc([]db.Machine{
+		{Provider: db.Google}, {Provider: db.Amazon}, {Provider: db.Google},
+		{Provider: db.Google},
 	})
 	assert.Equal(t, map[launchLoc][]db.Machine{
-		{db.Amazon, ""}: {{}},
-		{db.Google, ""}: {{}, {}, {}},
+		{db.Amazon, ""}: {{Provider: db.Amazon}},
+		{db.Google, ""}: {
+			{Provider: db.Google},
+			{Provider: db.Google},
+			{Provider: db.Google}},
 	}, grouped)
 }
