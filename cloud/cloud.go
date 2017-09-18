@@ -250,13 +250,9 @@ func (cld cloud) join() (joinResult, error) {
 			return err
 		}
 
-		var machines []db.Machine
-		allMachines := view.SelectFromMachine(nil)
-		for _, m := range allMachines {
-			if m.Provider == cld.providerName && m.Region == cld.region {
-				machines = append(machines, m)
-			}
-		}
+		machines := view.SelectFromMachine(func(m db.Machine) bool {
+			return m.Provider == cld.providerName && m.Region == cld.region
+		})
 
 		cloudMachines = getMachineRoles(cloudMachines)
 
@@ -287,7 +283,7 @@ func (cld cloud) join() (joinResult, error) {
 
 		// Regions with no machines in them should have their ACLs cleared.
 		if len(machines) > 0 {
-			for acl := range cld.getACLs(bp, allMachines) {
+			for acl := range cld.getACLs(bp) {
 				res.acls = append(res.acls, acl)
 			}
 		}
@@ -297,11 +293,7 @@ func (cld cloud) join() (joinResult, error) {
 	return res, err
 }
 
-// getACLs generates the set of ACLs that `cld` should have installed. It requires a list
-// of every machine in every region so that acls can be generated that allow them to
-// communicate with each other.  The machines just in this `cld`s region are not
-// sufficient.
-func (cld cloud) getACLs(bp db.Blueprint, machines []db.Machine) map[acl.ACL]struct{} {
+func (cld cloud) getACLs(bp db.Blueprint) map[acl.ACL]struct{} {
 	aclSet := map[acl.ACL]struct{}{}
 
 	// Always allow traffic from the Quilt controller, so we append local.
@@ -312,18 +304,6 @@ func (cld cloud) getACLs(bp db.Blueprint, machines []db.Machine) map[acl.ACL]str
 			MaxPort: 65535,
 		}
 		aclSet[acl] = struct{}{}
-	}
-
-	for _, m := range machines {
-		if m.PublicIP != "" {
-			// XXX: Look into the minimal set of necessary ports.
-			acl := acl.ACL{
-				CidrIP:  m.PublicIP + "/32",
-				MinPort: 1,
-				MaxPort: 65535,
-			}
-			aclSet[acl] = struct{}{}
-		}
 	}
 
 	for _, conn := range bp.Connections {

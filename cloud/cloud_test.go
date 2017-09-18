@@ -595,13 +595,13 @@ func TestGetACLs(t *testing.T) {
 	}
 
 	// Empty blueprint should have "local" added to it.
-	acls := cld.getACLs(db.Blueprint{}, nil)
+	acls := cld.getACLs(db.Blueprint{})
 	assert.Equal(t, exp, acls)
 
 	// A blueprint with local, shouldn't have it added a second time.
 	acls = cld.getACLs(db.Blueprint{
 		Blueprint: blueprint.Blueprint{AdminACL: []string{"local"}},
-	}, nil)
+	})
 	assert.Equal(t, exp, acls)
 
 	// Connections that aren't to or from public, shouldn't affect the acls.
@@ -614,7 +614,7 @@ func TestGetACLs(t *testing.T) {
 				MaxPort: 6,
 			}},
 		},
-	}, nil)
+	})
 	assert.Equal(t, exp, acls)
 
 	// Connections from public create an ACL.
@@ -627,16 +627,8 @@ func TestGetACLs(t *testing.T) {
 				MaxPort: 2,
 			}},
 		},
-	}, nil)
+	})
 	exp[acl.ACL{CidrIP: "0.0.0.0/0", MinPort: 1, MaxPort: 2}] = struct{}{}
-	assert.Equal(t, exp, acls)
-
-	// Machines have holes opened up for them.
-	exp = map[acl.ACL]struct{}{
-		{CidrIP: "local", MinPort: 1, MaxPort: 65535}:      {},
-		{CidrIP: "1.2.3.4/32", MinPort: 1, MaxPort: 65535}: {},
-	}
-	acls = cld.getACLs(db.Blueprint{}, []db.Machine{{PublicIP: "1.2.3.4"}})
 	assert.Equal(t, exp, acls)
 }
 
