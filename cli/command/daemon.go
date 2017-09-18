@@ -19,7 +19,6 @@ import (
 	tlsIO "github.com/quilt/quilt/connection/tls/io"
 	"github.com/quilt/quilt/connection/tls/rsa"
 	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/engine"
 	"github.com/quilt/quilt/util"
 	"github.com/quilt/quilt/version"
 
@@ -103,7 +102,6 @@ func (dCmd *Daemon) Run() int {
 	}
 
 	conn := db.New()
-	go engine.Run(conn, getPublicKey(sshKey))
 	go server.Run(conn, dCmd.host, true, creds)
 
 	ca, err := tlsIO.ReadCA(cliPath.DefaultTLSDir)
@@ -114,7 +112,7 @@ func (dCmd *Daemon) Run() int {
 	}
 
 	go cloud.SyncCredentials(conn, sshKey, ca)
-	cloud.Run(conn, creds)
+	cloud.Run(conn, creds, getPublicKey(sshKey))
 	return 0
 }
 
