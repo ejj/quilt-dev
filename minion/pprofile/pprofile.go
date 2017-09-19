@@ -81,8 +81,5 @@ func (pro *Prof) TimedRun(duration time.Duration) error {
 		return err
 	}
 	<-timer.C
-	if err := pro.Stop(); err != nil {
-		return err
-	}
-	return nil
+	return pro.Stop()
 }

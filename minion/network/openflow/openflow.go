@@ -332,9 +332,5 @@ var ofctl = func(action string, flows []string) error {
 	}
 	stdin.Close()
 
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return cmd.Wait()
 }

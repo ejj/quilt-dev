@@ -160,10 +160,8 @@ func (prvdr *Provider) Boot(bootSet []db.Machine) error {
 		}
 		names = append(names, name)
 	}
-	if err := prvdr.wait(names, true); err != nil {
-		return err
-	}
-	return nil
+
+	return prvdr.wait(names, true)
 }
 
 // Stop blocks while deleting the instances.
@@ -184,10 +182,7 @@ func (prvdr *Provider) Stop(machines []db.Machine) error {
 		}
 		names = append(names, m.CloudID)
 	}
-	if err := prvdr.wait(names, false); err != nil {
-		return err
-	}
-	return nil
+	return prvdr.wait(names, false)
 }
 
 // Get() and operationWait() don't always present the same results, so
@@ -628,10 +623,7 @@ func (prvdr *Provider) createInternalFirewall() error {
 		ops = append(ops, op)
 	}
 
-	if err := prvdr.operationWait(ops, global); err != nil {
-		return err
-	}
-	return nil
+	return prvdr.operationWait(ops, global)
 }
 
 func networkURL(networkName string) string {
