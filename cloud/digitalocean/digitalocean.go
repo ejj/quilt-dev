@@ -79,25 +79,9 @@ var newDigitalOcean = func(namespace, region string) (*Provider, error) {
 
 // List will fetch all droplets that have the same name as the cluster namespace.
 func (prvdr Provider) List() (machines []db.Machine, err error) {
-	floatingIPListOpt := &godo.ListOptions{}
-	floatingIPs := map[int]string{}
-	for {
-		ips, resp, err := prvdr.ListFloatingIPs(floatingIPListOpt)
-		if err != nil {
-			return nil, fmt.Errorf("list floating IPs: %s", err)
-		}
-
-		for _, ip := range ips {
-			if ip.Droplet == nil {
-				continue
-			}
-			floatingIPs[ip.Droplet.ID] = ip.IP
-		}
-
-		if resp.Links == nil || resp.Links.IsLastPage() {
-			break
-		}
-		floatingIPListOpt.Page++
+	floatingIPs, err := prvdr.getFloatingIPs()
+	if err != nil {
+		return nil, err
 	}
 
 	dropletListOpt := &godo.ListOptions{} // Keep track of the page we're on.
@@ -141,6 +125,31 @@ func (prvdr Provider) List() (machines []db.Machine, err error) {
 		dropletListOpt.Page++
 	}
 	return machines, nil
+}
+
+func (prvdr Provider) getFloatingIPs() (map[int]string, error) {
+	floatingIPListOpt := &godo.ListOptions{}
+	floatingIPs := map[int]string{}
+	for {
+		ips, resp, err := prvdr.ListFloatingIPs(floatingIPListOpt)
+		if err != nil {
+			return nil, fmt.Errorf("list floating IPs: %s", err)
+		}
+
+		for _, ip := range ips {
+			if ip.Droplet == nil {
+				continue
+			}
+			floatingIPs[ip.Droplet.ID] = ip.IP
+		}
+
+		if resp.Links == nil || resp.Links.IsLastPage() {
+			break
+		}
+		floatingIPListOpt.Page++
+	}
+
+	return floatingIPs, nil
 }
 
 // Boot will boot every machine in a goroutine, and wait for the machines to come up.
