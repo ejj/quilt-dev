@@ -145,18 +145,7 @@ func writeContainers(fd io.Writer, containers []db.Container, machines []db.Mach
 	fmt.Fprintln(w, "CONTAINER\tMACHINE\tCOMMAND\tHOSTNAME"+
 		"\tSTATUS\tCREATED\tPUBLIC IP")
 
-	hostnamePublicPorts := map[string][]string{}
-	for _, c := range connections {
-		if c.From != blueprint.PublicInternetLabel {
-			continue
-		}
-
-		portStr := fmt.Sprintf("%d", c.MinPort)
-		if c.MinPort != c.MaxPort {
-			portStr += fmt.Sprintf("-%d", c.MaxPort)
-		}
-		hostnamePublicPorts[c.To] = append(hostnamePublicPorts[c.To], portStr)
-	}
+	hostnamePublicPorts := connToPorts(connections)
 
 	ipIDMap := map[string]string{}
 	idMachineMap := map[string]db.Machine{}
@@ -223,6 +212,22 @@ func writeContainers(fd io.Writer, containers []db.Container, machines []db.Mach
 				container, dbc.Hostname, status, created, publicIP)
 		}
 	}
+}
+
+func connToPorts(connections []db.Connection) map[string][]string {
+	hostnamePublicPorts := map[string][]string{}
+	for _, c := range connections {
+		if c.From != blueprint.PublicInternetLabel {
+			continue
+		}
+
+		portStr := fmt.Sprintf("%d", c.MinPort)
+		if c.MinPort != c.MaxPort {
+			portStr += fmt.Sprintf("-%d", c.MaxPort)
+		}
+		hostnamePublicPorts[c.To] = append(hostnamePublicPorts[c.To], portStr)
+	}
+	return hostnamePublicPorts
 }
 
 func containerStr(image string, args []string, truncate bool) string {
