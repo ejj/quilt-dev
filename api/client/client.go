@@ -97,60 +97,17 @@ func New(lAddr string, creds connection.Credentials) (Client, error) {
 	}, nil
 }
 
-func query(pbClient pb.APIClient, table db.TableType) (interface{}, error) {
+// Writes the result into `v` a pointer to a slice of database structs.  For example
+// *[]db.Machine.
+func query(pbClient pb.APIClient, table db.TableType, v interface{}) error {
 	ctx, _ := context.WithTimeout(context.Background(), requestTimeout)
 	reply, err := pbClient.Query(ctx, &pb.DBQuery{Table: string(table)})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	replyBytes := []byte(reply.TableContents)
-	switch table {
-	case db.MachineTable:
-		var machines []db.Machine
-		if err := json.Unmarshal(replyBytes, &machines); err != nil {
-			return nil, err
-		}
-		return machines, nil
-	case db.ContainerTable:
-		var containers []db.Container
-		if err := json.Unmarshal(replyBytes, &containers); err != nil {
-			return nil, err
-		}
-		return containers, nil
-	case db.EtcdTable:
-		var etcds []db.Etcd
-		if err := json.Unmarshal(replyBytes, &etcds); err != nil {
-			return nil, err
-		}
-		return etcds, nil
-	case db.LoadBalancerTable:
-		var loadBalancers []db.LoadBalancer
-		if err := json.Unmarshal(replyBytes, &loadBalancers); err != nil {
-			return nil, err
-		}
-		return loadBalancers, nil
-	case db.ConnectionTable:
-		var connections []db.Connection
-		if err := json.Unmarshal(replyBytes, &connections); err != nil {
-			return nil, err
-		}
-		return connections, nil
-	case db.BlueprintTable:
-		var blueprints []db.Blueprint
-		if err := json.Unmarshal(replyBytes, &blueprints); err != nil {
-			return nil, err
-		}
-		return blueprints, nil
-	case db.ImageTable:
-		var images []db.Image
-		if err := json.Unmarshal(replyBytes, &images); err != nil {
-			return nil, err
-		}
-		return images, nil
-	default:
-		panic(fmt.Sprintf("unsupported table type: %s", table))
-	}
+	return json.Unmarshal(replyBytes, v)
 }
 
 // Close the grpc connection.
@@ -160,63 +117,45 @@ func (c clientImpl) Close() error {
 
 // QueryMachines retrieves the machines tracked by the Quilt daemon.
 func (c clientImpl) QueryMachines() ([]db.Machine, error) {
-	rows, err := query(c.pbClient, db.MachineTable)
-	if err != nil {
-		return nil, err
-	}
-
-	return rows.([]db.Machine), nil
+	var rows []db.Machine
+	return rows, query(c.pbClient, db.MachineTable, &rows)
 }
 
 // QueryContainers retrieves the containers tracked by the Quilt daemon.
 func (c clientImpl) QueryContainers() ([]db.Container, error) {
-	rows, err := query(c.pbClient, db.ContainerTable)
-	if err != nil {
-		return nil, err
-	}
-
-	return rows.([]db.Container), nil
+	var rows []db.Container
+	return rows, query(c.pbClient, db.ContainerTable, &rows)
 }
 
 // QueryEtcd retrieves the etcd information tracked by the Quilt daemon.
 func (c clientImpl) QueryEtcd() ([]db.Etcd, error) {
-	rows, err := query(c.pbClient, db.EtcdTable)
-	if err != nil {
-		return nil, err
-	}
-
-	return rows.([]db.Etcd), nil
+	var rows []db.Etcd
+	return rows, query(c.pbClient, db.EtcdTable, &rows)
 }
 
 // QueryConnections retrieves the connection information tracked by the Quilt daemon.
 func (c clientImpl) QueryConnections() ([]db.Connection, error) {
-	rows, err := query(c.pbClient, db.ConnectionTable)
-	if err != nil {
-		return nil, err
-	}
-
-	return rows.([]db.Connection), nil
+	var rows []db.Connection
+	return rows, query(c.pbClient, db.ConnectionTable, &rows)
 }
 
 // QueryLoadBalancers retrieves the load balancer information tracked by the
 // Quilt daemon.
 func (c clientImpl) QueryLoadBalancers() ([]db.LoadBalancer, error) {
-	rows, err := query(c.pbClient, db.LoadBalancerTable)
-	if err != nil {
-		return nil, err
-	}
-
-	return rows.([]db.LoadBalancer), nil
+	var rows []db.LoadBalancer
+	return rows, query(c.pbClient, db.LoadBalancerTable, &rows)
 }
 
 // QueryBlueprints retrieves the blueprint information tracked by the Quilt daemon.
 func (c clientImpl) QueryBlueprints() ([]db.Blueprint, error) {
-	rows, err := query(c.pbClient, db.BlueprintTable)
-	if err != nil {
-		return nil, err
-	}
+	var rows []db.Blueprint
+	return rows, query(c.pbClient, db.BlueprintTable, &rows)
+}
 
-	return rows.([]db.Blueprint), nil
+// QueryImages retrieves the image information tracked by the Quilt daemon.
+func (c clientImpl) QueryImages() ([]db.Image, error) {
+	var rows []db.Image
+	return rows, query(c.pbClient, db.ImageTable, &rows)
 }
 
 // QueryCounters retrieves the debugging counters tracked with the Quilt daemon.
@@ -247,16 +186,6 @@ func parseCountersReply(reply *pb.CountersReply) (counters []pb.Counter) {
 		counters = append(counters, *c)
 	}
 	return counters
-}
-
-// QueryImages retrieves the image information tracked by the Quilt daemon.
-func (c clientImpl) QueryImages() ([]db.Image, error) {
-	rows, err := query(c.pbClient, db.ImageTable)
-	if err != nil {
-		return nil, err
-	}
-
-	return rows.([]db.Image), nil
 }
 
 // Deploy makes a request to the Quilt daemon to deploy the given deployment.
