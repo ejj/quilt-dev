@@ -191,9 +191,6 @@ func (cld cloud) boot(machines []db.Machine) {
 			Region:      m.Region,
 		})
 	}
-
-	setStatuses(cld.conn, machines, db.Booting)
-	defer setStatuses(cld.conn, machines, "")
 	cld.updateCloud(cloudMachines, provider.Boot, "boot")
 }
 
@@ -260,6 +257,11 @@ func (cld cloud) join() (joinResult, error) {
 		res.boot = dbResult.boot
 		res.terminate = dbResult.stop
 		res.updateIPs = dbResult.updateIPs
+
+		for _, dbm := range res.boot {
+			dbm.Status = db.Booting
+			view.Commit(dbm)
+		}
 
 		for _, pair := range dbResult.pairs {
 			dbm := pair.L.(db.Machine)

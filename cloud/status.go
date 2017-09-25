@@ -1,13 +1,9 @@
 package cloud
 
 import (
-	"errors"
-
 	"github.com/quilt/quilt/cloud/foreman"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/util"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func updateMachineStatuses(conn db.Conn) {
@@ -20,9 +16,11 @@ func updateMachineStatuses(conn db.Conn) {
 func updateMachineStatusesOnce(conn db.Conn) {
 	conn.Txn(db.MachineTable).Run(func(view db.Database) error {
 		for _, dbm := range view.SelectFromMachine(nil) {
-			// Don't touch machines that are booting. `clst.boot` will take
-			// care of unsetting the status when it's no longer booting.
-			if dbm.Status == db.Booting {
+			// Don't touch machines that are still booting.  Note that we
+			// can't check `dbm.Status == db.Booting`, because this is the
+			// code responsible for changing it from db.Booting to
+			// db.Connecting and it must run to achieve that.
+			if dbm.PublicIP == "" {
 				continue
 			}
 
@@ -57,36 +55,6 @@ func status(m db.Machine) (string, bool) {
 	}
 
 	return "", false
-}
-
-func setStatuses(conn db.Conn, machines []db.Machine, status string) {
-	for _, m := range machines {
-		if err := setStatus(conn, m.BlueprintID, status); err != nil {
-			log.WithFields(log.Fields{
-				"error":   err,
-				"machine": m.BlueprintID,
-				"status":  status,
-			}).Warn("Failed to update status of machine")
-		}
-	}
-}
-
-func setStatus(conn db.Conn, id string, status string) error {
-	return conn.Txn(db.MachineTable).Run(func(view db.Database) error {
-		matchingMachines := view.SelectFromMachine(func(m db.Machine) bool {
-			return m.BlueprintID == id
-		})
-		switch len(matchingMachines) {
-		case 1:
-			matchingMachines[0].Status = status
-			view.Commit(matchingMachines[0])
-			return nil
-		case 0:
-			return errors.New("no matching machine")
-		default:
-			return errors.New("multiple matching machines")
-		}
-	})
 }
 
 var isConnected = foreman.IsConnected
