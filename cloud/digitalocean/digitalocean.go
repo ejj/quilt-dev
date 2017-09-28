@@ -13,7 +13,6 @@ import (
 	"github.com/quilt/quilt/cloud/acl"
 	"github.com/quilt/quilt/cloud/cfg"
 	"github.com/quilt/quilt/cloud/digitalocean/client"
-	"github.com/quilt/quilt/cloud/wait"
 	"github.com/quilt/quilt/counter"
 	"github.com/quilt/quilt/db"
 	"github.com/quilt/quilt/join"
@@ -153,49 +152,30 @@ func (prvdr Provider) getFloatingIPs() (map[int]string, error) {
 }
 
 // Boot will boot every machine in a goroutine, and wait for the machines to come up.
-func (prvdr Provider) Boot(bootSet []db.Machine) error {
-	errChan := make(chan error, len(bootSet))
+func (prvdr Provider) Boot(bootSet []db.Machine) ([]string, error) {
+	var ids []string
 	for _, m := range bootSet {
 		if m.Preemptible {
-			return errors.New("preemptible instances are not yet implemented")
+			return ids, errors.New("preemptible vms are not implemented")
 		}
 
-		go func(m db.Machine) {
-			errChan <- prvdr.createAndAttach(m)
-		}(m)
-	}
-
-	var err error
-	for range bootSet {
-		if e := <-errChan; e != nil {
-			err = e
+		createReq := &godo.DropletCreateRequest{
+			Name:              prvdr.namespace,
+			Region:            prvdr.region,
+			Size:              m.Size,
+			Image:             godo.DropletCreateImage{ID: imageID},
+			PrivateNetworking: true,
+			UserData:          cfg.Ubuntu(m, ""),
 		}
-	}
-	return err
-}
+		d, _, err := prvdr.CreateDroplet(createReq)
+		if err != nil {
+			return ids, err
+		}
 
-// Creates a new machine, and waits for the machine to become active.
-func (prvdr Provider) createAndAttach(m db.Machine) error {
-	cloudConfig := cfg.Ubuntu(m, "")
-	createReq := &godo.DropletCreateRequest{
-		Name:              prvdr.namespace,
-		Region:            prvdr.region,
-		Size:              m.Size,
-		Image:             godo.DropletCreateImage{ID: imageID},
-		PrivateNetworking: true,
-		UserData:          cloudConfig,
+		ids = append(ids, strconv.Itoa(d.ID))
 	}
 
-	d, _, err := prvdr.CreateDroplet(createReq)
-	if err != nil {
-		return err
-	}
-
-	pred := func() bool {
-		d, _, err := prvdr.GetDroplet(d.ID)
-		return err == nil && d.Status == "active"
-	}
-	return wait.Wait(pred)
+	return ids, nil
 }
 
 // UpdateFloatingIPs updates Droplet to Floating IP associations.
@@ -259,38 +239,19 @@ func (prvdr Provider) syncFloatingIPs(curr, targets []db.Machine) error {
 
 // Stop stops each machine and deletes their attached volumes.
 func (prvdr Provider) Stop(machines []db.Machine) error {
-	errChan := make(chan error, len(machines))
 	for _, m := range machines {
-		go func(m db.Machine) {
-			errChan <- prvdr.deleteAndWait(m.CloudID)
-		}(m)
-	}
+		id, err := strconv.Atoi(m.CloudID)
+		if err != nil {
+			return err
+		}
 
-	var err error
-	for range machines {
-		if e := <-errChan; e != nil {
-			err = e
+		_, err = prvdr.DeleteDroplet(id)
+		if err != nil {
+			return err
 		}
 	}
-	return err
-}
 
-func (prvdr Provider) deleteAndWait(ids string) error {
-	id, err := strconv.Atoi(ids)
-	if err != nil {
-		return err
-	}
-
-	_, err = prvdr.DeleteDroplet(id)
-	if err != nil {
-		return err
-	}
-
-	pred := func() bool {
-		d, _, err := prvdr.GetDroplet(id)
-		return err != nil || d == nil
-	}
-	return wait.Wait(pred)
+	return nil
 }
 
 // SetACLs is not supported in DigitalOcean.

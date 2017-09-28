@@ -55,7 +55,8 @@ func (p *fakeProvider) List() ([]db.Machine, error) {
 	return machines, nil
 }
 
-func (p *fakeProvider) Boot(bootSet []db.Machine) error {
+func (p *fakeProvider) Boot(bootSet []db.Machine) ([]string, error) {
+	var ids []string
 	for _, toBoot := range bootSet {
 		// Record the boot request before we mutate it with implementation
 		// details of our fakeProvider.
@@ -65,6 +66,7 @@ func (p *fakeProvider) Boot(bootSet []db.Machine) error {
 		idStr := strconv.Itoa(p.idCounter)
 		toBoot.CloudID = idStr
 		toBoot.PublicIP = idStr
+		ids = append(ids, idStr)
 
 		// A machine's role is `None` until the minion boots, at which
 		// `getMachineRoles` will populate this field with the correct role.
@@ -77,7 +79,7 @@ func (p *fakeProvider) Boot(bootSet []db.Machine) error {
 		p.machines[idStr] = toBoot
 	}
 
-	return nil
+	return ids, nil
 }
 
 func (p *fakeProvider) Stop(machines []db.Machine) error {
