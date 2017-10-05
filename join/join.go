@@ -5,8 +5,9 @@ package join
 import (
 	"reflect"
 
-	"github.com/quilt/quilt/counter"
 	"sort"
+
+	"github.com/quilt/quilt/counter"
 )
 
 var c = counter.New("Join")
