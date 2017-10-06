@@ -34,7 +34,9 @@ var credentialsCounter = counter.New("Cloud Credentials")
 func SyncCredentials(conn db.Conn, sshKey ssh.Signer, ca rsa.KeyPair) {
 	credentialedMachines := map[string]struct{}{}
 	for range conn.TriggerTick(30, db.MachineTable).C {
-		machines := conn.SelectFromMachine(nil)
+		machines := conn.SelectFromMachine(func(m db.Machine) bool {
+			return m.Status != db.Stopping && m.PublicIP != ""
+		})
 		syncCredentialsOnce(sshKey, ca, machines, credentialedMachines)
 	}
 }
@@ -44,7 +46,7 @@ func syncCredentialsOnce(sshKey ssh.Signer, ca rsa.KeyPair,
 	credentialsCounter.Inc("Install to cluster")
 	for _, m := range machines {
 		_, hasCreds := credentialedMachines[m.PublicIP]
-		if hasCreds || m.PublicIP == "" {
+		if hasCreds {
 			continue
 		}
 
