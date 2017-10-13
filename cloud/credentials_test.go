@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ssh"
 
-	tlsIO "github.com/quilt/quilt/connection/tls/io"
-	"github.com/quilt/quilt/connection/tls/rsa"
-	"github.com/quilt/quilt/db"
+	tlsIO "github.com/kelda/kelda/connection/tls/io"
+	"github.com/kelda/kelda/connection/tls/rsa"
+	"github.com/kelda/kelda/db"
 )
 
 // Test the success path when generating and installing credentials on a new

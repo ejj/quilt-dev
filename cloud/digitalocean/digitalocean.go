@@ -10,14 +10,14 @@ import (
 
 	"github.com/digitalocean/godo"
 
-	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/cloud/cfg"
-	"github.com/quilt/quilt/cloud/digitalocean/client"
-	"github.com/quilt/quilt/cloud/wait"
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/join"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/cloud/acl"
+	"github.com/kelda/kelda/cloud/cfg"
+	"github.com/kelda/kelda/cloud/digitalocean/client"
+	"github.com/kelda/kelda/cloud/wait"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/join"
+	"github.com/kelda/kelda/util"
 
 	"golang.org/x/oauth2"
 

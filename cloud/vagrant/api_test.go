@@ -3,7 +3,7 @@ package vagrant
 import (
 	"testing"
 
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/util"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

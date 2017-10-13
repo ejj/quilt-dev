@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/quilt/quilt/minion/pb"
+	"github.com/kelda/kelda/minion/pb"
 )
 
 // The Role a machine may take on within the cluster.

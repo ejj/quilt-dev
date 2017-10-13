@@ -1,9 +1,9 @@
 package cloud
 
 import (
-	"github.com/quilt/quilt/cloud/foreman"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/cloud/foreman"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/util"
 )
 
 func updateMachineStatuses(conn db.Conn) {

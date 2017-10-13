@@ -4,9 +4,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/quilt/quilt/connection"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/pb"
+	"github.com/kelda/kelda/connection"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/pb"
 
 	"golang.org/x/net/context"
 

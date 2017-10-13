@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion"
-	"github.com/quilt/quilt/util"
-	"github.com/quilt/quilt/version"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion"
+	"github.com/kelda/kelda/util"
+	"github.com/kelda/kelda/version"
 
 	log "github.com/sirupsen/logrus"
 )

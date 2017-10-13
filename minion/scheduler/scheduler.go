@@ -8,11 +8,11 @@ package scheduler
 import (
 	"time"
 
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/docker"
-	"github.com/quilt/quilt/minion/network/plugin"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/docker"
+	"github.com/kelda/kelda/minion/network/plugin"
+	"github.com/kelda/kelda/util"
 	log "github.com/sirupsen/logrus"
 )
 

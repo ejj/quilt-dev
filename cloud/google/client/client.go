@@ -13,8 +13,8 @@ import (
 
 	compute "google.golang.org/api/compute/v1"
 
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/util"
 )
 
 // A Client for Google's API. Used for unit testing.

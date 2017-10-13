@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/supervisor/images"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/supervisor/images"
 )
 
 func TestNone(t *testing.T) {

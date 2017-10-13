@@ -2,7 +2,7 @@ package inspect
 
 import (
 	"fmt"
-	"github.com/quilt/quilt/blueprint"
+	"github.com/kelda/kelda/blueprint"
 )
 
 // A Node in the communication Graph.

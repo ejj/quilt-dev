@@ -6,12 +6,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/join"
-	"github.com/quilt/quilt/minion/nl"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/join"
+	"github.com/kelda/kelda/minion/nl"
+	"github.com/kelda/kelda/util"
 
 	"github.com/coreos/go-iptables/iptables"
 	log "github.com/sirupsen/logrus"

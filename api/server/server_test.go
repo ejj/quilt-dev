@@ -8,13 +8,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/quilt/quilt/api"
-	"github.com/quilt/quilt/api/client"
-	"github.com/quilt/quilt/api/client/mocks"
-	"github.com/quilt/quilt/api/pb"
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/connection"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/api"
+	"github.com/kelda/kelda/api/client"
+	"github.com/kelda/kelda/api/client/mocks"
+	"github.com/kelda/kelda/api/pb"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/connection"
+	"github.com/kelda/kelda/db"
 	"github.com/stretchr/testify/assert"
 )
 

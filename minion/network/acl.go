@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/join"
-	"github.com/quilt/quilt/minion/ovsdb"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/join"
+	"github.com/kelda/kelda/minion/ovsdb"
 
 	log "github.com/sirupsen/logrus"
 )

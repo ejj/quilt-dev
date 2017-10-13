@@ -15,10 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/cloud/digitalocean/client/mocks"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/cloud/acl"
+	"github.com/kelda/kelda/cloud/digitalocean/client/mocks"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/util"
 )
 
 const testNamespace = "namespace"

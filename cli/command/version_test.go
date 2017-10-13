@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/quilt/quilt/api/client/mocks"
+	"github.com/kelda/kelda/api/client/mocks"
 )
 
 func TestVersionFlags(t *testing.T) {

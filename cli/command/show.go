@@ -11,9 +11,9 @@ import (
 	"time"
 
 	units "github.com/docker/go-units"
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/util"
 )
 
 // An arbitrary length to truncate container commands to.

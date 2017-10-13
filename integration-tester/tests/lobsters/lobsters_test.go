@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/quilt/quilt/integration-tester/util"
+	"github.com/kelda/kelda/integration-tester/util"
 )
 
 func TestLobsters(t *testing.T) {

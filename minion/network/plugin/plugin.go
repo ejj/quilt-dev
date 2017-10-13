@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/minion/ipdef"
-	"github.com/quilt/quilt/minion/network/openflow"
-	"github.com/quilt/quilt/minion/nl"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/minion/ipdef"
+	"github.com/kelda/kelda/minion/network/openflow"
+	"github.com/kelda/kelda/minion/nl"
 
 	dnet "github.com/docker/go-plugins-helpers/network"
 

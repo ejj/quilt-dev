@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/quilt/quilt/api/client/mocks"
-	"github.com/quilt/quilt/api/pb"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/api/client/mocks"
+	"github.com/kelda/kelda/api/pb"
+	"github.com/kelda/kelda/db"
 	"github.com/stretchr/testify/assert"
 )
 

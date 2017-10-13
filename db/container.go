@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/util"
 )
 
 // A Container row is created for each container specified by the policy.  Each row will

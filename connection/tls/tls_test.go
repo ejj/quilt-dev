@@ -4,7 +4,7 @@ import (
 	"encoding/pem"
 	"testing"
 
-	"github.com/quilt/quilt/connection/tls/rsa"
+	"github.com/kelda/kelda/connection/tls/rsa"
 
 	"github.com/stretchr/testify/assert"
 )

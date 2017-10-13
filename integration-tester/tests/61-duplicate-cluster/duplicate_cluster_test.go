@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/quilt/quilt/integration-tester/util"
+	"github.com/kelda/kelda/integration-tester/util"
 )
 
 var connectionRegex = regexp.MustCompile(`Registering worker (\d+\.\d+\.\d+\.\d+:\d+)`)

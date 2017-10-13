@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/quilt/quilt/counter"
+	"github.com/kelda/kelda/counter"
 )
 
 // The Database is the central storage location for all state in the system.  The policy

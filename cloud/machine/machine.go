@@ -3,8 +3,8 @@ package machine
 import (
 	"fmt"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
 )
 
 // Description describes a VM type offered by a cloud provider.

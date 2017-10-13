@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/quilt/quilt/counter"
+	"github.com/kelda/kelda/counter"
 )
 
 // A Client to an Amazon EC2 region.

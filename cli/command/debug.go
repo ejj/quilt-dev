@@ -14,10 +14,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/quilt/quilt/cli/ssh"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/supervisor/images"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/cli/ssh"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/supervisor/images"
+	"github.com/kelda/kelda/util"
 )
 
 // Stored in variables to be mocked out for the unit tests.

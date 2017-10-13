@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/quilt/quilt/cli"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/cli"
+	"github.com/kelda/kelda/util"
 
 	"google.golang.org/grpc/grpclog"
 

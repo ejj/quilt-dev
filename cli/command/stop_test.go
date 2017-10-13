@@ -3,9 +3,9 @@ package command
 import (
 	"testing"
 
-	clientMock "github.com/quilt/quilt/api/client/mocks"
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
+	clientMock "github.com/kelda/kelda/api/client/mocks"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

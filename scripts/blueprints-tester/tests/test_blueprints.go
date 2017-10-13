@@ -9,7 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/quilt/quilt/blueprint"
+	"github.com/kelda/kelda/blueprint"
 )
 
 func tryRunBlueprint(bp string) error {

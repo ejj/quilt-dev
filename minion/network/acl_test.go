@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/ovsdb"
-	"github.com/quilt/quilt/minion/ovsdb/mocks"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/ovsdb"
+	"github.com/kelda/kelda/minion/ovsdb/mocks"
 	"github.com/stretchr/testify/mock"
 )
 

@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/digitalocean/godo"
-	"github.com/quilt/quilt/counter"
+	"github.com/kelda/kelda/counter"
 )
 
 // A Client for DigitalOcean's API. Used for unit testing.

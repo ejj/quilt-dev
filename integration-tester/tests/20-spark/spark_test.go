@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	testerUtil "github.com/quilt/quilt/integration-tester/util"
-	"github.com/quilt/quilt/util"
+	testerUtil "github.com/kelda/kelda/integration-tester/util"
+	"github.com/kelda/kelda/util"
 )
 
 func TestCalculatesPI(t *testing.T) {

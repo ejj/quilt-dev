@@ -3,7 +3,7 @@ package cloud
 import (
 	"testing"
 
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/db"
 )
 
 func TestDefaultRegion(t *testing.T) {

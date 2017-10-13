@@ -8,11 +8,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/quilt/quilt/api"
-	"github.com/quilt/quilt/api/client"
-	cliPath "github.com/quilt/quilt/cli/path"
-	tlsIO "github.com/quilt/quilt/connection/tls/io"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/api"
+	"github.com/kelda/kelda/api/client"
+	cliPath "github.com/kelda/kelda/cli/path"
+	tlsIO "github.com/kelda/kelda/connection/tls/io"
+	"github.com/kelda/kelda/db"
 )
 
 // GetDefaultDaemonClient gets an API client connected to the daemon on the

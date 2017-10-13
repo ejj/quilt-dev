@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/util"
 )
 
 var inspCommands = "quilt inspect BLUEPRINT OUTPUT_FORMAT"

@@ -11,8 +11,8 @@ import (
 	units "github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/quilt/quilt/api/client/mocks"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/api/client/mocks"
+	"github.com/kelda/kelda/db"
 )
 
 func TestShowFlags(t *testing.T) {

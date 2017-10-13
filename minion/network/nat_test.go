@@ -11,12 +11,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/vishvananda/netlink"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/ipdef"
-	"github.com/quilt/quilt/minion/network/mocks"
-	"github.com/quilt/quilt/minion/nl"
-	"github.com/quilt/quilt/minion/nl/nlmock"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/ipdef"
+	"github.com/kelda/kelda/minion/network/mocks"
+	"github.com/kelda/kelda/minion/nl"
+	"github.com/kelda/kelda/minion/nl/nlmock"
 )
 
 func TestUpdateNATErrors(t *testing.T) {

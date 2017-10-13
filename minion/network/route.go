@@ -8,11 +8,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/ipdef"
-	"github.com/quilt/quilt/minion/nl"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/ipdef"
+	"github.com/kelda/kelda/minion/nl"
+	"github.com/kelda/kelda/util"
 )
 
 var subnetC = counter.New("Subnet Sync")

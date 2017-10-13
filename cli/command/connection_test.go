@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/quilt/quilt/api/client"
-	"github.com/quilt/quilt/api/client/mocks"
-	"github.com/quilt/quilt/connection"
+	"github.com/kelda/kelda/api/client"
+	"github.com/kelda/kelda/api/client/mocks"
+	"github.com/kelda/kelda/connection"
 )
 
 func TestSetupClient(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/db"
 )
 
 func TestUpdateMachineStatuses(t *testing.T) {

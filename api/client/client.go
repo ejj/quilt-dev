@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/quilt/quilt/api"
-	"github.com/quilt/quilt/api/pb"
-	"github.com/quilt/quilt/connection"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/api"
+	"github.com/kelda/kelda/api/pb"
+	"github.com/kelda/kelda/connection"
+	"github.com/kelda/kelda/db"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

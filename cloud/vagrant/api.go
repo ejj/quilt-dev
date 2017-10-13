@@ -10,8 +10,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/kelda/kelda/util"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/quilt/quilt/util"
 	log "github.com/sirupsen/logrus"
 )
 

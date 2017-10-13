@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/util"
 )
 
 type keyTest struct {

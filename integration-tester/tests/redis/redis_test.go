@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/quilt/quilt/integration-tester/util"
+	"github.com/kelda/kelda/integration-tester/util"
 )
 
 const (

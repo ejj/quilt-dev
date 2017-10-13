@@ -6,10 +6,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/join"
-	"github.com/quilt/quilt/minion/ipdef"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/join"
+	"github.com/kelda/kelda/minion/ipdef"
 
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"

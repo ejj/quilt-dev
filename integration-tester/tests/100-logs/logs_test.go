@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/quilt/quilt/integration-tester/util"
+	"github.com/kelda/kelda/integration-tester/util"
 )
 
 func TestMinionLogs(t *testing.T) {

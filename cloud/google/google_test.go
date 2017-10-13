@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/cloud/google/client/mocks"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/cloud/acl"
+	"github.com/kelda/kelda/cloud/google/client/mocks"
+	"github.com/kelda/kelda/db"
 	"github.com/stretchr/testify/suite"
 
 	compute "google.golang.org/api/compute/v1"

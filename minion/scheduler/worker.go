@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/join"
-	"github.com/quilt/quilt/minion/docker"
-	"github.com/quilt/quilt/minion/ipdef"
-	"github.com/quilt/quilt/minion/network/openflow"
-	"github.com/quilt/quilt/minion/network/plugin"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/join"
+	"github.com/kelda/kelda/minion/docker"
+	"github.com/kelda/kelda/minion/ipdef"
+	"github.com/kelda/kelda/minion/network/openflow"
+	"github.com/kelda/kelda/minion/network/plugin"
+	"github.com/kelda/kelda/util"
 	log "github.com/sirupsen/logrus"
 )
 

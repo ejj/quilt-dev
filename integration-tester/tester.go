@@ -14,12 +14,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/quilt/quilt/blueprint"
-	cliPath "github.com/quilt/quilt/cli/path"
-	"github.com/quilt/quilt/db"
-	testerUtil "github.com/quilt/quilt/integration-tester/util"
-	"github.com/quilt/quilt/join"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/blueprint"
+	cliPath "github.com/kelda/kelda/cli/path"
+	"github.com/kelda/kelda/db"
+	testerUtil "github.com/kelda/kelda/integration-tester/util"
+	"github.com/kelda/kelda/join"
+	"github.com/kelda/kelda/util"
 )
 
 var (

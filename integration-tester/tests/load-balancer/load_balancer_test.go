@@ -7,7 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	util "github.com/quilt/quilt/integration-tester/util"
+	util "github.com/kelda/kelda/integration-tester/util"
 )
 
 const (

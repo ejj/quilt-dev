@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/quilt/quilt/api/pb"
+	"github.com/kelda/kelda/api/pb"
 	"github.com/stretchr/testify/assert"
 )
 

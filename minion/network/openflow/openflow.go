@@ -5,9 +5,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/minion/ipdef"
-	"github.com/quilt/quilt/minion/ovsdb"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/minion/ipdef"
+	"github.com/kelda/kelda/minion/ovsdb"
 )
 
 /* OpenFlow Psuedocode -- Please, for the love of God, keep this updated.

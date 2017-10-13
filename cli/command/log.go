@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/quilt/quilt/cli/ssh"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/cli/ssh"
+	"github.com/kelda/kelda/util"
 
 	log "github.com/sirupsen/logrus"
 )

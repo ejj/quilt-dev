@@ -5,7 +5,7 @@ package nl
 import (
 	"net"
 
-	"github.com/quilt/quilt/counter"
+	"github.com/kelda/kelda/counter"
 	"github.com/vishvananda/netlink"
 )
 

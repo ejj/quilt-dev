@@ -1,12 +1,12 @@
 package engine
 
 import (
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/cloud"
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/join"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/cloud"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/join"
+	"github.com/kelda/kelda/util"
 
 	log "github.com/sirupsen/logrus"
 )

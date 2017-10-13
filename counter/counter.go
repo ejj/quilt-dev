@@ -4,7 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/quilt/quilt/api/pb"
+	"github.com/kelda/kelda/api/pb"
 	"golang.org/x/sync/syncmap"
 )
 

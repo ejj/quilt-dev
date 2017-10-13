@@ -5,7 +5,7 @@ import (
 	"time"
 
 	dkc "github.com/fsouza/go-dockerclient"
-	"github.com/quilt/quilt/minion/ipdef"
+	"github.com/kelda/kelda/minion/ipdef"
 	"github.com/stretchr/testify/assert"
 )
 

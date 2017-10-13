@@ -3,11 +3,11 @@ package cloud
 import (
 	"fmt"
 
-	"github.com/quilt/quilt/cloud/amazon"
-	"github.com/quilt/quilt/cloud/digitalocean"
-	"github.com/quilt/quilt/cloud/google"
-	"github.com/quilt/quilt/cloud/machine"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/cloud/amazon"
+	"github.com/kelda/kelda/cloud/digitalocean"
+	"github.com/kelda/kelda/cloud/google"
+	"github.com/kelda/kelda/cloud/machine"
+	"github.com/kelda/kelda/db"
 )
 
 // DefaultRegion populates `m.Region` for the provided db.Machine if one isn't

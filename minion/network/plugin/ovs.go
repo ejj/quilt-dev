@@ -3,7 +3,7 @@ package plugin
 import (
 	"os/exec"
 
-	"github.com/quilt/quilt/minion/network/openflow"
+	"github.com/kelda/kelda/minion/network/openflow"
 )
 
 type vsctlReq struct {

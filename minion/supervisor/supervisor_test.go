@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/docker"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/docker"
 )
 
 type testCtx struct {

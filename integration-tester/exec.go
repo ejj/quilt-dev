@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/quilt/quilt/api"
-	"github.com/quilt/quilt/db"
-	testerUtil "github.com/quilt/quilt/integration-tester/util"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/api"
+	"github.com/kelda/kelda/db"
+	testerUtil "github.com/kelda/kelda/integration-tester/util"
+	"github.com/kelda/kelda/util"
 )
 
 // runBlueprintUntilConnected runs the given blueprint, and blocks until either all

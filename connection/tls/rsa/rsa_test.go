@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 	"testing"
 
-	"github.com/quilt/quilt/connection/tls"
+	"github.com/kelda/kelda/connection/tls"
 
 	"github.com/stretchr/testify/assert"
 )

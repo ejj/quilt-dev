@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/quilt/quilt/util"
-	"github.com/quilt/quilt/version"
+	"github.com/kelda/kelda/util"
+	"github.com/kelda/kelda/version"
 
 	log "github.com/sirupsen/logrus"
 )

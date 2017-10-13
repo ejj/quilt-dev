@@ -1,9 +1,9 @@
 package minion
 
 import (
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/join"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/join"
 
 	log "github.com/sirupsen/logrus"
 )

@@ -4,8 +4,8 @@ import (
 	"flag"
 	"os"
 
-	"github.com/quilt/quilt/cli/command"
-	"github.com/quilt/quilt/cli/command/inspect"
+	"github.com/kelda/kelda/cli/command"
+	"github.com/kelda/kelda/cli/command/inspect"
 
 	log "github.com/sirupsen/logrus"
 )

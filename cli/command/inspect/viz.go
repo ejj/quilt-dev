@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/util"
 )
 
 func stripExtension(configPath string) string {

@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	tlsIO "github.com/quilt/quilt/connection/tls/io"
-	"github.com/quilt/quilt/util"
+	tlsIO "github.com/kelda/kelda/connection/tls/io"
+	"github.com/kelda/kelda/util"
 )
 
 func TestParsePrivateKey(t *testing.T) {

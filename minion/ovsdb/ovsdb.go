@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/quilt/quilt/counter"
+	"github.com/kelda/kelda/counter"
 	ovs "github.com/socketplane/libovsdb"
 )
 

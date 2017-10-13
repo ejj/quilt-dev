@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/integration-tester/util"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/integration-tester/util"
 )
 
 func TestEtcd(t *testing.T) {

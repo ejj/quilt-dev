@@ -3,7 +3,7 @@ package wait
 import (
 	"time"
 
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/util"
 )
 
 // Wait provides reasonable default values for `util.BackoffWaitFor` for use

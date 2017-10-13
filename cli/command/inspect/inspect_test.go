@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/quilt/quilt/blueprint"
+	"github.com/kelda/kelda/blueprint"
 )
 
 func TestStripExtension(t *testing.T) {

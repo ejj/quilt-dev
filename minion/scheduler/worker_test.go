@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/docker"
-	"github.com/quilt/quilt/minion/network/openflow"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/docker"
+	"github.com/kelda/kelda/minion/network/openflow"
 	"github.com/stretchr/testify/assert"
 )
 

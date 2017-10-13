@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/coreos/etcd/client"
-	"github.com/quilt/quilt/counter"
+	"github.com/kelda/kelda/counter"
 	log "github.com/sirupsen/logrus"
 )
 

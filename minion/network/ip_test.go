@@ -6,8 +6,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/ipdef"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/ipdef"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

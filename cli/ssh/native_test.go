@@ -11,8 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	cliPath "github.com/quilt/quilt/cli/path"
-	"github.com/quilt/quilt/util"
+	cliPath "github.com/kelda/kelda/cli/path"
+	"github.com/kelda/kelda/util"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"

@@ -5,7 +5,7 @@ package join
 import (
 	"reflect"
 
-	"github.com/quilt/quilt/counter"
+	"github.com/kelda/kelda/counter"
 	"sort"
 )
 

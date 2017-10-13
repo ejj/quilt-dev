@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quilt/quilt/integration-tester/util"
-	"github.com/quilt/quilt/minion/supervisor/images"
+	"github.com/kelda/kelda/integration-tester/util"
+	"github.com/kelda/kelda/minion/supervisor/images"
 
 	log "github.com/sirupsen/logrus"
 )

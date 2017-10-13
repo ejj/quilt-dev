@@ -33,7 +33,7 @@ install:
 
 gocheck:
 	govendor test $$(govendor list -no-status +local | \
-		grep -vE github.com/quilt/quilt/"integration-tester|scripts")
+		grep -vE github.com/kelda/kelda/"integration-tester|scripts")
 
 jscheck:
 	npm test
@@ -79,7 +79,7 @@ COV_SKIP= /api/client/mocks \
 
 go-coverage:
 	echo "" > coverage.txt
-	for package in $(filter-out $(COV_SKIP), $(subst github.com/quilt/quilt,,$(PACKAGES))) ; do \
+	for package in $(filter-out $(COV_SKIP), $(subst github.com/kelda/kelda,,$(PACKAGES))) ; do \
 	    go test -coverprofile=.$$package.cov .$$package && \
 	    go tool cover -html=.$$package.cov -o .$$package.html ; \
 	    cat .$$package.cov >> coverage.txt ; \

@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/afero/sftpfs"
 	"golang.org/x/crypto/ssh"
 
-	tlsIO "github.com/quilt/quilt/connection/tls/io"
-	"github.com/quilt/quilt/connection/tls/rsa"
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/db"
+	tlsIO "github.com/kelda/kelda/connection/tls/io"
+	"github.com/kelda/kelda/connection/tls/rsa"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/db"
 )
 
 var credentialsCounter = counter.New("Cloud Credentials")

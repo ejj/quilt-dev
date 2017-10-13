@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
-	"github.com/quilt/quilt/api"
-	"github.com/quilt/quilt/api/client"
-	cliPath "github.com/quilt/quilt/cli/path"
-	"github.com/quilt/quilt/connection"
-	"github.com/quilt/quilt/connection/tls"
-	tlsIO "github.com/quilt/quilt/connection/tls/io"
-	"github.com/quilt/quilt/connection/tls/rsa"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/integration-tester/util"
+	"github.com/kelda/kelda/api"
+	"github.com/kelda/kelda/api/client"
+	cliPath "github.com/kelda/kelda/cli/path"
+	"github.com/kelda/kelda/connection"
+	"github.com/kelda/kelda/connection/tls"
+	tlsIO "github.com/kelda/kelda/connection/tls/io"
+	"github.com/kelda/kelda/connection/tls/rsa"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/integration-tester/util"
 )
 
 // insecureConnection defines connections with no authentication.

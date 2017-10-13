@@ -3,8 +3,8 @@ package engine
 import (
 	"testing"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/db"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quilt/quilt/minion/pb"
+	"github.com/kelda/kelda/minion/pb"
 	"github.com/stretchr/testify/assert"
 )
 

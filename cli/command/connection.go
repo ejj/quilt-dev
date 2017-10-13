@@ -3,11 +3,11 @@ package command
 import (
 	"flag"
 
-	"github.com/quilt/quilt/api"
-	"github.com/quilt/quilt/api/client"
-	cliPath "github.com/quilt/quilt/cli/path"
-	"github.com/quilt/quilt/connection"
-	tlsIO "github.com/quilt/quilt/connection/tls/io"
+	"github.com/kelda/kelda/api"
+	"github.com/kelda/kelda/api/client"
+	cliPath "github.com/kelda/kelda/cli/path"
+	"github.com/kelda/kelda/connection"
+	tlsIO "github.com/kelda/kelda/connection/tls/io"
 )
 
 type connectionFlags struct {

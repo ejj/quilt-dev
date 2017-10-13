@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/db"
 )
 
 // GetContainer retrieves the container with the given blueprintID.

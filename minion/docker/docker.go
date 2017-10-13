@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/minion/ipdef"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/minion/ipdef"
+	"github.com/kelda/kelda/util"
 
 	dkc "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"

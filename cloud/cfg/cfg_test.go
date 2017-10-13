@@ -3,7 +3,7 @@ package cfg
 import (
 	"testing"
 
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/db"
 
 	log "github.com/sirupsen/logrus"
 )

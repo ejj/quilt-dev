@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/util"
 
 	log "github.com/sirupsen/logrus"
 )

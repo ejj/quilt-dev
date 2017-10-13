@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/integration-tester/util"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/integration-tester/util"
 )
 
 // This map should match the map in floating-ip.js.

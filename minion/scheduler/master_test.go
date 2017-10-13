@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/db"
 	"github.com/stretchr/testify/assert"
 )
 

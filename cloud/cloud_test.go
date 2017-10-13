@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/cloud/acl"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/join"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/cloud/acl"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/join"
 	"github.com/stretchr/testify/assert"
 )
 

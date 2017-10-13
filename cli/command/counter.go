@@ -9,9 +9,9 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	"github.com/quilt/quilt/api/client"
-	"github.com/quilt/quilt/api/pb"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/api/client"
+	"github.com/kelda/kelda/api/pb"
+	"github.com/kelda/kelda/util"
 )
 
 const daemonTarget = "daemon"

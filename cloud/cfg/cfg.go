@@ -6,9 +6,9 @@ import (
 	"strings"
 	"text/template"
 
-	tlsIO "github.com/quilt/quilt/connection/tls/io"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/version"
+	tlsIO "github.com/kelda/kelda/connection/tls/io"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/version"
 
 	log "github.com/sirupsen/logrus"
 )

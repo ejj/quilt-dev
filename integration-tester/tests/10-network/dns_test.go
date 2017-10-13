@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/quilt/quilt/api/client"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/api/client"
+	"github.com/kelda/kelda/db"
 )
 
 // anyIPAllowed is used to indicate that any non-error response is okay for an external

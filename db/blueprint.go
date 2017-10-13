@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/quilt/quilt/blueprint"
+	"github.com/kelda/kelda/blueprint"
 )
 
 // A Blueprint that Quilt is attempting to implement.

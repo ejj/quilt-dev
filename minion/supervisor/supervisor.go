@@ -5,10 +5,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/quilt/quilt/counter"
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/docker"
-	"github.com/quilt/quilt/minion/supervisor/images"
+	"github.com/kelda/kelda/counter"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/docker"
+	"github.com/kelda/kelda/minion/supervisor/images"
 
 	log "github.com/sirupsen/logrus"
 )

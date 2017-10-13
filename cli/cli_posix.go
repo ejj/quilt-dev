@@ -2,7 +2,7 @@
 
 package cli
 
-import "github.com/quilt/quilt/cli/command"
+import "github.com/kelda/kelda/cli/command"
 
 func init() {
 	commands["minion"] = command.NewMinionCommand()

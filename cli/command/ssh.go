@@ -10,11 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/quilt/quilt/api/client"
-	"github.com/quilt/quilt/api/util"
-	"github.com/quilt/quilt/cli/ssh"
-	"github.com/quilt/quilt/db"
-	quiltUtil "github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/api/client"
+	"github.com/kelda/kelda/api/util"
+	"github.com/kelda/kelda/cli/ssh"
+	"github.com/kelda/kelda/db"
+	quiltUtil "github.com/kelda/kelda/util"
 )
 
 // SSH contains the options for SSHing into machines.

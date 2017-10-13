@@ -5,11 +5,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/ipdef"
-	"github.com/quilt/quilt/minion/nl"
-	"github.com/quilt/quilt/minion/supervisor/images"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/ipdef"
+	"github.com/kelda/kelda/minion/nl"
+	"github.com/kelda/kelda/minion/supervisor/images"
+	"github.com/kelda/kelda/util"
 
 	log "github.com/sirupsen/logrus"
 )

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/client"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/db"
 
 	log "github.com/sirupsen/logrus"
 )

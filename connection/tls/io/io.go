@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/quilt/quilt/connection/tls"
-	"github.com/quilt/quilt/connection/tls/rsa"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/connection/tls"
+	"github.com/kelda/kelda/connection/tls/rsa"
+	"github.com/kelda/kelda/util"
 )
 
 const (

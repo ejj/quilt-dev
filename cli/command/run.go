@@ -15,9 +15,9 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/quilt/quilt/api/client"
-	"github.com/quilt/quilt/blueprint"
-	"github.com/quilt/quilt/util"
+	"github.com/kelda/kelda/api/client"
+	"github.com/kelda/kelda/blueprint"
+	"github.com/kelda/kelda/util"
 )
 
 // Run contains the options for running blueprints.

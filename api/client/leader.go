@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/quilt/quilt/api"
-	"github.com/quilt/quilt/api/util"
-	"github.com/quilt/quilt/connection"
-	"github.com/quilt/quilt/db"
+	"github.com/kelda/kelda/api"
+	"github.com/kelda/kelda/api/util"
+	"github.com/kelda/kelda/connection"
+	"github.com/kelda/kelda/db"
 )
 
 // Leader obtains a Client connected to the Leader of the cluster.

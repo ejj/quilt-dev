@@ -6,7 +6,7 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/quilt/quilt/scripts/blueprints-tester/tests"
+	"github.com/kelda/kelda/scripts/blueprints-tester/tests"
 )
 
 func main() {

@@ -7,8 +7,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/quilt/quilt/db"
-	"github.com/quilt/quilt/minion/docker"
+	"github.com/kelda/kelda/db"
+	"github.com/kelda/kelda/minion/docker"
 )
 
 /*

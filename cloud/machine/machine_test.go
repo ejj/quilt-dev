@@ -3,7 +3,7 @@ package machine
 import (
 	"testing"
 
-	"github.com/quilt/quilt/blueprint"
+	"github.com/kelda/kelda/blueprint"
 )
 
 func TestConstraints(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/quilt/quilt/minion/ovsdb"
-	"github.com/quilt/quilt/minion/ovsdb/mocks"
+	"github.com/kelda/kelda/minion/ovsdb"
+	"github.com/kelda/kelda/minion/ovsdb/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
